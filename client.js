@@ -1135,6 +1135,10 @@ document.addEventListener('DOMContentLoaded', () => {
   nearbyRestaurantsUI = new NearbyRestaurantsUI(locationManager);
   nearbyRestaurantsUI.init();
 
+  // Initialize review history UI
+  reviewHistoryUI = new ReviewHistoryUI();
+  reviewHistoryUI.init();
+
   // Initialize gacha location search UI
   initGachaLocationSearch();
 
@@ -1155,7 +1159,13 @@ document.addEventListener('DOMContentLoaded', () => {
         gachaAnimator.reset();
         showScreen('gacha');
       }
-      else if (target === 'reviews') showScreen('reviews');
+      else if (target === 'reviews') {
+        showScreen('reviews');
+        // 리뷰 목록 로드
+        if (reviewHistoryUI) {
+          reviewHistoryUI.loadReviews();
+        }
+      }
     });
   });
 
@@ -1372,3 +1382,475 @@ function updateRatingStars(rating) {
     }
   });
 }
+
+// ===================
+// Review History UI Manager
+// ===================
+class ReviewHistoryUI {
+  constructor() {
+    this.container = null;
+    this.reviews = [];
+    this.sessionId = null;
+    this.isLoading = false;
+    this.currentSort = 'date'; // 'date' or 'rating'
+    this.sortOrder = 'desc'; // 'desc' or 'asc'
+  }
+
+  /**
+   * 세션 ID 생성 또는 가져오기
+   */
+  getSessionId() {
+    let sessionId = localStorage.getItem('what_eat_today_session_id');
+    if (!sessionId) {
+      sessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substring(2, 11);
+      localStorage.setItem('what_eat_today_session_id', sessionId);
+    }
+    return sessionId;
+  }
+
+  /**
+   * 초기화
+   */
+  init() {
+    this.container = document.getElementById('reviews-list-container');
+    this.sessionId = this.getSessionId();
+    this.setupFilterListeners();
+  }
+
+  /**
+   * 필터/정렬 버튼 이벤트 리스너 설정
+   */
+  setupFilterListeners() {
+    // 정렬 버튼 이벤트 리스너
+    document.querySelectorAll('[data-sort-reviews]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const sortType = btn.getAttribute('data-sort-reviews');
+        this.handleSort(sortType, btn);
+      });
+    });
+  }
+
+  /**
+   * 정렬 처리
+   */
+  handleSort(sortType, clickedBtn) {
+    // 이미 선택된 정렬인 경우 순서 토글
+    if (this.currentSort === sortType) {
+      this.sortOrder = this.sortOrder === 'desc' ? 'asc' : 'desc';
+    } else {
+      this.currentSort = sortType;
+      this.sortOrder = 'desc';
+    }
+
+    // UI 상태 업데이트
+    document.querySelectorAll('[data-sort-reviews]').forEach(btn => {
+      btn.classList.remove('bg-primary', 'text-white');
+      btn.classList.add('bg-gray-100', 'text-gray-600');
+    });
+    clickedBtn.classList.remove('bg-gray-100', 'text-gray-600');
+    clickedBtn.classList.add('bg-primary', 'text-white');
+
+    // 정렬 아이콘 업데이트
+    const arrow = this.sortOrder === 'desc' ? '↓' : '↑';
+    const labelMap = { date: '날짜순', rating: '평점순' };
+    clickedBtn.innerHTML = `${labelMap[sortType]} ${arrow}`;
+
+    // 리뷰 다시 렌더링
+    this.sortAndRenderReviews();
+  }
+
+  /**
+   * 리뷰 정렬 및 렌더링
+   */
+  sortAndRenderReviews() {
+    const sortedReviews = [...this.reviews].sort((a, b) => {
+      let comparison = 0;
+      if (this.currentSort === 'date') {
+        comparison = new Date(b.created_at) - new Date(a.created_at);
+      } else if (this.currentSort === 'rating') {
+        comparison = parseFloat(b.rating) - parseFloat(a.rating);
+      }
+      return this.sortOrder === 'desc' ? comparison : -comparison;
+    });
+
+    this.renderReviewList(sortedReviews);
+  }
+
+  /**
+   * 데모 리뷰 데이터 (API에 데이터가 없을 때 사용)
+   */
+  getDemoReviews() {
+    const now = new Date();
+    return [
+      {
+        id: 'demo-1',
+        restaurant_id: 'demo-rest-1',
+        restaurant: { id: 'demo-rest-1', name: '황금카레', emoji: '🍛', category: '일식' },
+        rating: 5,
+        content: '카레가 정말 진하고 맛있어요! 돈까스도 바삭바삭하고 양도 푸짐합니다. 점심시간에 갔는데 사람이 많아서 좀 기다렸지만 그만한 가치가 있었어요. 다음에 또 방문할 예정입니다.',
+        tags: ['tasty', 'portion', 'value'],
+        created_at: new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000).toISOString() // 2일 전
+      },
+      {
+        id: 'demo-2',
+        restaurant_id: 'demo-rest-2',
+        restaurant: { id: 'demo-rest-2', name: '피자파티', emoji: '🍕', category: '양식' },
+        rating: 4,
+        content: '치즈가 정말 늘어나는 피자! 토핑도 풍성하고 도우도 쫄깃해요. 사이드로 시킨 감자튀김도 맛있었습니다. 배달도 되니까 편하게 시켜먹기 좋아요.',
+        tags: ['tasty', 'kind'],
+        created_at: new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000).toISOString() // 5일 전
+      },
+      {
+        id: 'demo-3',
+        restaurant_id: 'demo-rest-3',
+        restaurant: { id: 'demo-rest-3', name: '맛있는 국수집', emoji: '🍜', category: '한식' },
+        rating: 5,
+        content: '여름에 딱 좋은 시원한 냉면! 육수가 깔끔하고 면도 쫄깃해요. 양도 많아서 배부르게 먹었습니다. 물냉면, 비빔냉면 둘 다 추천해요.',
+        tags: ['tasty', 'portion', 'fast'],
+        created_at: new Date(now.getTime() - 10 * 24 * 60 * 60 * 1000).toISOString() // 10일 전
+      },
+      {
+        id: 'demo-4',
+        restaurant_id: 'demo-rest-4',
+        restaurant: { id: 'demo-rest-4', name: '스시도쿄', emoji: '🍣', category: '일식' },
+        rating: 4.5,
+        content: '신선한 회와 초밥이 일품입니다. 특히 연어 초밥이 정말 맛있었어요. 가격대는 조금 있지만 특별한 날에 가기 좋은 곳이에요.',
+        tags: ['tasty', 'ambiance'],
+        created_at: new Date(now.getTime() - 15 * 24 * 60 * 60 * 1000).toISOString() // 15일 전
+      },
+      {
+        id: 'demo-5',
+        restaurant_id: 'demo-rest-5',
+        restaurant: { id: 'demo-rest-5', name: '버거하우스', emoji: '🍔', category: '양식' },
+        rating: 4,
+        content: '수제 버거가 정말 맛있어요! 패티가 두툼하고 육즙이 풍부합니다. 감자튀김도 바삭바삭하고 양이 많아서 좋아요.',
+        tags: ['tasty', 'portion', 'value'],
+        created_at: new Date(now.getTime() - 35 * 24 * 60 * 60 * 1000).toISOString() // 35일 전 (이번 달 이전)
+      }
+    ];
+  }
+
+  /**
+   * 리뷰 목록 로드
+   */
+  async loadReviews() {
+    if (this.isLoading) return;
+    this.isLoading = true;
+
+    this.showLoadingState();
+
+    try {
+      const params = new URLSearchParams({
+        session_id: this.sessionId,
+        limit: '50',
+        offset: '0'
+      });
+
+      const response = await fetch(`/api/reviews/my?${params}`);
+      const result = await response.json();
+
+      if (!result.success) {
+        throw new Error(result.error || '리뷰를 불러오는데 실패했습니다.');
+      }
+
+      this.reviews = result.data || [];
+
+      // API에 데이터가 없으면 데모 데이터 사용 (시연용)
+      if (this.reviews.length === 0) {
+        console.log('No reviews from API, using demo data for demonstration');
+        this.reviews = this.getDemoReviews();
+      }
+
+      this.sortAndRenderReviews();
+    } catch (error) {
+      console.error('리뷰 로드 오류:', error);
+      // 오류 발생 시에도 데모 데이터 표시 (시연용)
+      console.log('API error, using demo data for demonstration');
+      this.reviews = this.getDemoReviews();
+      this.sortAndRenderReviews();
+    } finally {
+      this.isLoading = false;
+    }
+  }
+
+  /**
+   * 로딩 상태 표시
+   */
+  showLoadingState() {
+    if (!this.container) return;
+
+    this.container.innerHTML = `
+      <div class="flex flex-col items-center justify-center py-16 text-center">
+        <div class="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mb-4"></div>
+        <p class="text-gray-500">리뷰를 불러오는 중...</p>
+      </div>
+    `;
+  }
+
+  /**
+   * 에러 상태 표시
+   */
+  showErrorState(message) {
+    if (!this.container) return;
+
+    this.container.innerHTML = `
+      <div class="flex flex-col items-center justify-center py-16 text-center">
+        <span class="text-6xl mb-4 opacity-50" aria-hidden="true">😢</span>
+        <h3 class="text-lg font-semibold text-gray-700 mb-2">불러오기 실패</h3>
+        <p class="text-sm text-gray-500 mb-6">${message}</p>
+        <button
+          type="button"
+          class="px-6 py-3 bg-primary text-white font-semibold rounded-xl hover:bg-primary-dark transition-colors"
+          onclick="reviewHistoryUI.loadReviews()"
+        >
+          다시 시도
+        </button>
+      </div>
+    `;
+  }
+
+  /**
+   * 빈 상태 표시
+   */
+  showEmptyState() {
+    if (!this.container) return;
+
+    this.container.innerHTML = `
+      <div class="flex flex-col items-center justify-center py-16 text-center">
+        <span class="text-6xl mb-4 opacity-50" aria-hidden="true">📝</span>
+        <h3 class="text-lg font-semibold text-gray-700 mb-2">아직 리뷰가 없어요</h3>
+        <p class="text-sm text-gray-500 mb-6">맛집에 방문하고 첫 리뷰를 남겨보세요!</p>
+        <button
+          type="button"
+          class="inline-flex items-center gap-2 px-8 py-4 bg-primary text-white text-base font-semibold rounded-xl hover:bg-primary-dark transition-colors"
+          data-action="write"
+        >
+          <span aria-hidden="true">✏️</span>
+          <span>리뷰 작성하기</span>
+        </button>
+      </div>
+    `;
+
+    // 빈 상태에서 리뷰 작성 버튼 이벤트 리스너 추가
+    const writeBtn = this.container.querySelector('[data-action="write"]');
+    if (writeBtn) {
+      writeBtn.addEventListener('click', () => showScreen('reviewWrite'));
+    }
+  }
+
+  /**
+   * 날짜 포맷팅 (2025년 1월 25일 형식)
+   */
+  formatDate(dateString) {
+    const date = new Date(dateString);
+    return new Intl.DateTimeFormat('ko-KR', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    }).format(date);
+  }
+
+  /**
+   * 날짜 그룹 라벨 생성 (오늘, 이번 주, 이번 달, 이전)
+   */
+  getDateGroupLabel(dateString) {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffTime = now - date;
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 0) return '오늘';
+    if (diffDays === 1) return '어제';
+    if (diffDays < 7) return '이번 주';
+    if (diffDays < 30) return '이번 달';
+    return `${date.getFullYear()}년 ${date.getMonth() + 1}월`;
+  }
+
+  /**
+   * 별점 HTML 생성
+   */
+  createStarsHtml(rating) {
+    const fullStars = Math.floor(rating);
+    const hasHalfStar = rating % 1 >= 0.5;
+    let stars = '';
+
+    for (let i = 0; i < fullStars; i++) {
+      stars += '⭐';
+    }
+
+    // 반 별은 빈 별로 표시 (간단하게 처리)
+    const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
+    if (hasHalfStar) {
+      stars += '⭐';
+    }
+
+    return stars || '⭐';
+  }
+
+  /**
+   * 카테고리 이모지 반환
+   */
+  getCategoryEmoji(category) {
+    if (!category) return '🍽️';
+
+    const categoryLower = category.toLowerCase();
+    const emojiMap = {
+      '한식': '🍲', '일식': '🍣', '중식': '🥟', '양식': '🍝',
+      '분식': '🍜', '치킨': '🍗', '피자': '🍕', '버거': '🍔',
+      '카페': '☕', '베이커리': '🥐', '디저트': '🍰', '술집': '🍺',
+      '고기': '🥩', '해산물': '🦐', '샐러드': '🥗', '멕시칸': '🌮',
+      '태국': '🍛', '베트남': '🍜', '인도': '🍛', '국수': '🍜',
+      '카레': '🍛', '초밥': '🍣', '라멘': '🍜', '찌개': '🍲'
+    };
+
+    for (const [key, emoji] of Object.entries(emojiMap)) {
+      if (categoryLower.includes(key)) {
+        return emoji;
+      }
+    }
+
+    return '🍽️';
+  }
+
+  /**
+   * 태그 이모지 반환
+   */
+  getTagEmoji(tag) {
+    const tagEmojiMap = {
+      'tasty': '👍', '맛있어요': '👍',
+      'value': '💰', '가성비': '💰', '가성비 좋아요': '💰',
+      'portion': '🍽️', '양이 많아요': '🍽️',
+      'kind': '😊', '친절해요': '😊',
+      'ambiance': '🪑', '분위기 좋아요': '🪑',
+      'parking': '🅿️', '주차 편해요': '🅿️',
+      'fast': '⏱️', '빨라요': '⏱️',
+      'healthy': '🌱', '건강해요': '🌱'
+    };
+
+    const tagLower = tag.toLowerCase();
+    for (const [key, emoji] of Object.entries(tagEmojiMap)) {
+      if (tagLower.includes(key) || key.includes(tagLower)) {
+        return emoji;
+      }
+    }
+    return '🏷️';
+  }
+
+  /**
+   * 태그 표시 텍스트 반환
+   */
+  formatTagText(tag) {
+    const tagTextMap = {
+      'tasty': '맛있어요',
+      'value': '가성비 좋아요',
+      'portion': '양이 많아요',
+      'kind': '친절해요',
+      'ambiance': '분위기 좋아요',
+      'parking': '주차 편해요',
+      'fast': '빨라요',
+      'healthy': '건강해요'
+    };
+
+    return tagTextMap[tag] || tag;
+  }
+
+  /**
+   * 리뷰 카드 HTML 생성
+   */
+  createReviewCard(review) {
+    const restaurant = review.restaurant || {};
+    const emoji = restaurant.emoji || this.getCategoryEmoji(restaurant.category);
+    const restaurantName = restaurant.name || '알 수 없는 식당';
+    const category = restaurant.category || '';
+    const date = this.formatDate(review.created_at);
+    const rating = parseFloat(review.rating) || 0;
+    const content = review.content || '';
+    const tags = review.tags || [];
+
+    const starsHtml = this.createStarsHtml(rating);
+    const tagsHtml = tags.map(tag => {
+      const tagEmoji = this.getTagEmoji(tag);
+      const tagText = this.formatTagText(tag);
+      return `<span class="px-2 py-1 bg-bg-secondary rounded text-xs text-gray-600">${tagEmoji} ${tagText}</span>`;
+    }).join('');
+
+    return `
+      <article class="p-4 bg-white rounded-2xl shadow-sm hover:shadow-md transition-all" data-review-id="${review.id}">
+        <div class="flex items-center gap-4 mb-4">
+          <div class="w-12 h-12 bg-bg-secondary rounded-lg flex items-center justify-center text-xl flex-shrink-0">
+            <span aria-hidden="true">${emoji}</span>
+          </div>
+          <div class="flex-1 min-w-0">
+            <p class="text-base font-semibold text-gray-900 truncate">${restaurantName}</p>
+            <p class="text-xs text-gray-400">${date}${category ? ` · ${category}` : ''}</p>
+          </div>
+          <div class="flex gap-0.5 text-sm text-amber-500 flex-shrink-0">
+            <span>${starsHtml}</span>
+          </div>
+        </div>
+        ${content ? `
+        <p class="text-sm text-gray-600 leading-relaxed mb-4 line-clamp-3">
+          ${content}
+        </p>
+        ` : ''}
+        ${tags.length > 0 ? `
+        <div class="flex flex-wrap gap-1">
+          ${tagsHtml}
+        </div>
+        ` : ''}
+      </article>
+    `;
+  }
+
+  /**
+   * 리뷰 목록 렌더링 (날짜별 그룹화)
+   */
+  renderReviewList(reviews) {
+    if (!this.container) return;
+
+    if (!reviews || reviews.length === 0) {
+      this.showEmptyState();
+      return;
+    }
+
+    // 날짜별 그룹화
+    const groupedReviews = {};
+    reviews.forEach(review => {
+      const groupLabel = this.getDateGroupLabel(review.created_at);
+      if (!groupedReviews[groupLabel]) {
+        groupedReviews[groupLabel] = [];
+      }
+      groupedReviews[groupLabel].push(review);
+    });
+
+    // HTML 생성
+    let html = '';
+    for (const [groupLabel, groupReviews] of Object.entries(groupedReviews)) {
+      html += `
+        <div class="mb-6">
+          <h3 class="text-sm font-semibold text-gray-500 mb-3 px-1">${groupLabel}</h3>
+          <div class="flex flex-col gap-4">
+            ${groupReviews.map(review => this.createReviewCard(review)).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    this.container.innerHTML = html;
+
+    // 애니메이션 효과 (staggered)
+    const cards = this.container.querySelectorAll('article');
+    cards.forEach((card, index) => {
+      card.style.opacity = '0';
+      card.style.transform = 'translateY(20px)';
+      setTimeout(() => {
+        card.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+        card.style.opacity = '1';
+        card.style.transform = 'translateY(0)';
+      }, index * 50);
+    });
+  }
+}
+
+// Global review history UI instance
+let reviewHistoryUI = null;

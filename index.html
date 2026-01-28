@@ -45,9 +45,24 @@
           },
           animation: {
             'bounce-slow': 'bounce 2s ease-in-out infinite'
+          },
+          lineClamp: {
+            3: '3'
           }
         }
-      }
+      },
+      plugins: [
+        function({ addUtilities }) {
+          addUtilities({
+            '.line-clamp-3': {
+              display: '-webkit-box',
+              '-webkit-line-clamp': '3',
+              '-webkit-box-orient': 'vertical',
+              overflow: 'hidden'
+            }
+          })
+        }
+      ]
     }
   </script>
 </head>
@@ -382,7 +397,8 @@
            Screen 6: Review List Screen
            ========================================== -->
       <section id="screen-reviews" class="screen hidden" aria-labelledby="reviews-title">
-        <div class="flex items-center gap-4 p-4 bg-white border-b border-gray-200 -mx-4 -mt-4 mb-4">
+        <!-- Header -->
+        <div class="flex items-center gap-4 p-4 bg-white border-b border-gray-200 -mx-4 -mt-4">
           <button class="w-10 h-10 rounded-full flex items-center justify-center text-gray-700 hover:bg-gray-100 transition-colors" type="button" data-action="back" aria-label="뒤로 가기">
             ←
           </button>
@@ -392,77 +408,33 @@
           </button>
         </div>
 
-        <div class="flex flex-col gap-4">
-          <!-- Review Card 1 -->
-          <article class="p-4 bg-white rounded-2xl shadow-sm">
-            <div class="flex items-center gap-4 mb-4">
-              <div class="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center text-xl">
-                <span aria-hidden="true">🍛</span>
-              </div>
-              <div class="flex-1">
-                <p class="text-base font-semibold text-gray-900">황금카레</p>
-                <p class="text-xs text-gray-400">2025년 1월 25일</p>
-              </div>
-              <div class="flex gap-0.5 text-sm text-amber-500">
-                <span>⭐⭐⭐⭐⭐</span>
-              </div>
-            </div>
-            <p class="text-sm text-gray-600 leading-relaxed mb-4">
-              카레가 정말 진하고 맛있어요! 돈까스도 바삭바삭하고 양도 푸짐합니다. 점심시간에 갔는데 사람이 많아서 좀 기다렸지만 그만한 가치가 있었어요. 다음에 또 방문할 예정입니다.
-            </p>
-            <div class="flex flex-wrap gap-1">
-              <span class="px-2 py-1 bg-bg-secondary rounded text-xs text-gray-600">👍 맛있어요</span>
-              <span class="px-2 py-1 bg-bg-secondary rounded text-xs text-gray-600">🍽️ 양이 많아요</span>
-              <span class="px-2 py-1 bg-bg-secondary rounded text-xs text-gray-600">💰 가성비 좋아요</span>
-            </div>
-          </article>
+        <!-- Sort Controls -->
+        <div class="px-4 py-3 bg-white border-b border-gray-100 -mx-4">
+          <div class="flex gap-2">
+            <button
+              class="px-4 py-2 bg-primary text-white rounded-full text-sm font-medium transition-colors"
+              type="button"
+              data-sort-reviews="date"
+            >
+              날짜순 ↓
+            </button>
+            <button
+              class="px-4 py-2 bg-gray-100 text-gray-600 rounded-full text-sm font-medium hover:bg-gray-200 transition-colors"
+              type="button"
+              data-sort-reviews="rating"
+            >
+              평점순 ↓
+            </button>
+          </div>
+        </div>
 
-          <!-- Review Card 2 -->
-          <article class="p-4 bg-white rounded-2xl shadow-sm">
-            <div class="flex items-center gap-4 mb-4">
-              <div class="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center text-xl">
-                <span aria-hidden="true">🍕</span>
-              </div>
-              <div class="flex-1">
-                <p class="text-base font-semibold text-gray-900">피자파티</p>
-                <p class="text-xs text-gray-400">2025년 1월 20일</p>
-              </div>
-              <div class="flex gap-0.5 text-sm text-amber-500">
-                <span>⭐⭐⭐⭐</span>
-              </div>
-            </div>
-            <p class="text-sm text-gray-600 leading-relaxed mb-4">
-              치즈가 정말 늘어나는 피자! 토핑도 풍성하고 도우도 쫄깃해요. 사이드로 시킨 감자튀김도 맛있었습니다. 배달도 되니까 편하게 시켜먹기 좋아요.
-            </p>
-            <div class="flex flex-wrap gap-1">
-              <span class="px-2 py-1 bg-bg-secondary rounded text-xs text-gray-600">👍 맛있어요</span>
-              <span class="px-2 py-1 bg-bg-secondary rounded text-xs text-gray-600">😊 친절해요</span>
-            </div>
-          </article>
-
-          <!-- Review Card 3 -->
-          <article class="p-4 bg-white rounded-2xl shadow-sm">
-            <div class="flex items-center gap-4 mb-4">
-              <div class="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center text-xl">
-                <span aria-hidden="true">🍜</span>
-              </div>
-              <div class="flex-1">
-                <p class="text-base font-semibold text-gray-900">맛있는 국수집</p>
-                <p class="text-xs text-gray-400">2025년 1월 15일</p>
-              </div>
-              <div class="flex gap-0.5 text-sm text-amber-500">
-                <span>⭐⭐⭐⭐⭐</span>
-              </div>
-            </div>
-            <p class="text-sm text-gray-600 leading-relaxed mb-4">
-              여름에 딱 좋은 시원한 냉면! 육수가 깔끔하고 면도 쫄깃해요. 양도 많아서 배부르게 먹었습니다. 물냉면, 비빔냉면 둘 다 추천해요.
-            </p>
-            <div class="flex flex-wrap gap-1">
-              <span class="px-2 py-1 bg-bg-secondary rounded text-xs text-gray-600">👍 맛있어요</span>
-              <span class="px-2 py-1 bg-bg-secondary rounded text-xs text-gray-600">🍽️ 양이 많아요</span>
-              <span class="px-2 py-1 bg-bg-secondary rounded text-xs text-gray-600">⏱️ 빨라요</span>
-            </div>
-          </article>
+        <!-- Reviews List Container (dynamically loaded) -->
+        <div id="reviews-list-container" class="flex flex-col gap-4 mt-4">
+          <!-- Initial placeholder - will be replaced by JavaScript -->
+          <div class="flex flex-col items-center justify-center py-16 text-center">
+            <div class="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mb-4"></div>
+            <p class="text-gray-500">리뷰를 불러오는 중...</p>
+          </div>
         </div>
       </section>
 
