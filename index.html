@@ -118,67 +118,18 @@
           </button>
         </div>
 
-        <!-- Recent Reviews Section -->
-        <section class="mb-8" aria-labelledby="recent-reviews-title">
+        <!-- Recent Reviews Section (동적으로 로드됨) -->
+        <section id="home-recent-reviews" class="mb-8" aria-labelledby="recent-reviews-title">
           <div class="flex items-center justify-between mb-4 px-4">
             <h2 id="recent-reviews-title" class="text-lg font-bold text-gray-900">최근 리뷰</h2>
             <a href="#screen-reviews" class="text-sm text-primary font-medium" data-nav="reviews">전체보기</a>
           </div>
-
           <div class="flex flex-col gap-4 px-4">
-            <!-- Restaurant Card 1 -->
-            <article class="flex gap-4 p-4 bg-white rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
-              <div class="w-20 h-20 bg-bg-secondary rounded-xl flex items-center justify-center text-2xl flex-shrink-0">
-                <span aria-hidden="true">🍜</span>
-              </div>
-              <div class="flex-1 min-w-0">
-                <div class="flex items-start justify-between mb-1">
-                  <h3 class="text-base font-semibold text-gray-900 truncate">맛있는 국수집</h3>
-                  <div class="flex items-center gap-1 text-sm text-amber-500 flex-shrink-0">
-                    <span aria-hidden="true">⭐</span>
-                    <span>4.5</span>
-                  </div>
-                </div>
-                <p class="text-sm text-gray-500 mb-2">한식 · 국수</p>
-                <div class="flex items-center gap-4 text-xs text-gray-400">
-                  <span class="flex items-center gap-1">
-                    <span aria-hidden="true">📍</span>
-                    <span>350m</span>
-                  </span>
-                  <span class="flex items-center gap-1">
-                    <span aria-hidden="true">💰</span>
-                    <span>8,000원</span>
-                  </span>
-                </div>
-              </div>
-            </article>
-
-            <!-- Restaurant Card 2 -->
-            <article class="flex gap-4 p-4 bg-white rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
-              <div class="w-20 h-20 bg-bg-secondary rounded-xl flex items-center justify-center text-2xl flex-shrink-0">
-                <span aria-hidden="true">🍕</span>
-              </div>
-              <div class="flex-1 min-w-0">
-                <div class="flex items-start justify-between mb-1">
-                  <h3 class="text-base font-semibold text-gray-900 truncate">피자파티</h3>
-                  <div class="flex items-center gap-1 text-sm text-amber-500 flex-shrink-0">
-                    <span aria-hidden="true">⭐</span>
-                    <span>4.8</span>
-                  </div>
-                </div>
-                <p class="text-sm text-gray-500 mb-2">양식 · 피자</p>
-                <div class="flex items-center gap-4 text-xs text-gray-400">
-                  <span class="flex items-center gap-1">
-                    <span aria-hidden="true">📍</span>
-                    <span>500m</span>
-                  </span>
-                  <span class="flex items-center gap-1">
-                    <span aria-hidden="true">💰</span>
-                    <span>15,000원</span>
-                  </span>
-                </div>
-              </div>
-            </article>
+            <div class="text-center py-8 text-gray-400">
+              <span class="text-4xl mb-2 block">📝</span>
+              <p class="text-sm">아직 리뷰가 없어요</p>
+              <p class="text-xs mt-1">첫 번째 리뷰를 작성해보세요!</p>
+            </div>
           </div>
         </section>
       </section>
