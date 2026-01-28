@@ -660,6 +660,32 @@ function updateNavigation(screenName) {
   });
 }
 
+/**
+ * 뒤로가기 버튼 처리 - 현재 화면에 따라 적절한 화면으로 이동
+ */
+function handleBackAction() {
+  switch (currentScreen) {
+    case 'reviewWrite':
+      // 리뷰 작성 화면에서는 리뷰 목록으로 이동
+      showScreen('reviews');
+      if (reviewHistoryUI) {
+        reviewHistoryUI.loadReviews();
+      }
+      break;
+    case 'restaurants':
+    case 'gacha':
+    case 'gachaResult':
+    case 'reviews':
+      // 다른 화면들은 홈으로 이동
+      showScreen('home');
+      break;
+    default:
+      // 기본적으로 홈으로 이동
+      showScreen('home');
+      break;
+  }
+}
+
 // ===================
 // Gacha Animation System
 // ===================
@@ -1281,7 +1307,7 @@ document.addEventListener('DOMContentLoaded', () => {
           handleSelectClick();
           break;
         case 'back':
-          showScreen('home');
+          handleBackAction();
           break;
         case 'filter':
           toggleFilterModal(true);
