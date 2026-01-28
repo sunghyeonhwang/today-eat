@@ -2210,7 +2210,10 @@ class ReviewWriteUI {
     // 별점 선택 이벤트
     document.querySelectorAll('[data-rating]').forEach(star => {
       star.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
         const rating = parseInt(star.getAttribute('data-rating'));
+        console.log('⭐ 별점 클릭:', rating);
         this.setRating(rating);
       });
 
@@ -2255,6 +2258,7 @@ class ReviewWriteUI {
    */
   setRating(rating) {
     this.currentRating = rating;
+    console.log('⭐ 별점 설정됨:', rating);
     this.updateRatingDisplay(rating);
   }
 
@@ -2278,7 +2282,11 @@ class ReviewWriteUI {
    * 별점 표시 업데이트
    */
   updateRatingDisplay(rating) {
-    document.querySelectorAll('[data-rating]').forEach(star => {
+    console.log('⭐ 별점 표시 업데이트:', rating);
+    const stars = document.querySelectorAll('[data-rating]');
+    console.log('⭐ 별 개수:', stars.length);
+    
+    stars.forEach(star => {
       const starRating = parseInt(star.getAttribute('data-rating'));
       if (starRating <= rating) {
         star.classList.add('text-amber-400');
