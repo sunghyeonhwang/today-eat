@@ -4,7 +4,7 @@
  */
 
 // ===================
-// Restaurant Data
+// Restaurant Data (Fallback for gacha)
 // ===================
 const restaurants = [
   { id: 1, emoji: '🍛', name: '황금카레', category: '일식 · 카레', rating: 4.7, distance: '120m', price: '9,000원' },
@@ -18,6 +18,444 @@ const restaurants = [
   { id: 9, emoji: '🍱', name: '도시락명가', category: '한식 · 도시락', rating: 4.5, distance: '300m', price: '7,000원' },
   { id: 10, emoji: '🥗', name: '샐러드팜', category: '양식 · 샐러드', rating: 4.7, distance: '550m', price: '13,000원' }
 ];
+
+// ===================
+// Location & Nearby Restaurants Manager
+// ===================
+class LocationManager {
+  constructor() {
+    this.currentPosition = null;
+    this.isLoading = false;
+    this.nearbyRestaurants = [];
+  }
+
+  /**
+   * 브라우저 Geolocation API로 현재 위치 가져오기
+   * @returns {Promise<{latitude: number, longitude: number}>}
+   */
+  getCurrentPosition() {
+    return new Promise((resolve, reject) => {
+      if (!navigator.geolocation) {
+        reject(new Error('이 브라우저는 위치 서비스를 지원하지 않습니다.'));
+        return;
+      }
+
+      const options = {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 300000 // 5분 캐시
+      };
+
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          this.currentPosition = {
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude
+          };
+          resolve(this.currentPosition);
+        },
+        (error) => {
+          let errorMessage;
+          switch (error.code) {
+            case error.PERMISSION_DENIED:
+              errorMessage = '위치 권한이 거부되었습니다. 브라우저 설정에서 위치 권한을 허용해 주세요.';
+              break;
+            case error.POSITION_UNAVAILABLE:
+              errorMessage = '위치 정보를 가져올 수 없습니다.';
+              break;
+            case error.TIMEOUT:
+              errorMessage = '위치 요청 시간이 초과되었습니다.';
+              break;
+            default:
+              errorMessage = '알 수 없는 오류가 발생했습니다.';
+          }
+          reject(new Error(errorMessage));
+        },
+        options
+      );
+    });
+  }
+
+  /**
+   * 주변 음식점 검색 API 호출
+   * @param {string} location - 검색 위치 (예: 강남역)
+   * @param {string} category - 음식 카테고리 (선택)
+   * @param {number} count - 검색 개수 (기본 10)
+   * @returns {Promise<Array>}
+   */
+  async fetchNearbyRestaurants(location, category = '', count = 10) {
+    this.isLoading = true;
+
+    try {
+      const params = new URLSearchParams({
+        location,
+        count: count.toString()
+      });
+
+      if (category) {
+        params.append('category', category);
+      }
+
+      const response = await fetch(`/api/nearby-restaurants?${params}`);
+      const result = await response.json();
+
+      if (!result.success) {
+        throw new Error(result.error || '음식점 검색에 실패했습니다.');
+      }
+
+      this.nearbyRestaurants = result.data;
+      return {
+        restaurants: result.data,
+        meta: result.meta
+      };
+    } catch (error) {
+      console.error('주변 음식점 검색 오류:', error);
+      throw error;
+    } finally {
+      this.isLoading = false;
+    }
+  }
+
+  /**
+   * 좌표를 주소로 변환 (역지오코딩) - 향후 구현 예정
+   * 현재는 기본 위치 이름 반환
+   */
+  async getLocationName(latitude, longitude) {
+    // TODO: 역지오코딩 API 연동
+    // 현재는 좌표 기반 위치명 반환
+    return '현재 위치';
+  }
+}
+
+// ===================
+// Nearby Restaurants UI Manager
+// ===================
+class NearbyRestaurantsUI {
+  constructor(locationManager) {
+    this.locationManager = locationManager;
+    this.container = null;
+    this.currentLocation = '';
+    this.currentCategory = '';
+  }
+
+  /**
+   * 식당 목록 컨테이너 초기화
+   */
+  init() {
+    this.container = document.getElementById('restaurant-list-container');
+    this.setupLocationInput();
+  }
+
+  /**
+   * 위치 입력 UI 설정
+   */
+  setupLocationInput() {
+    const restaurantsScreen = document.getElementById('screen-restaurants');
+    if (!restaurantsScreen) return;
+
+    // 헤더 아래에 위치 입력 영역 추가
+    const header = restaurantsScreen.querySelector('.flex.items-center.gap-4.p-4.bg-white');
+    if (header && !document.getElementById('location-input-section')) {
+      const locationSection = document.createElement('div');
+      locationSection.id = 'location-input-section';
+      locationSection.className = 'px-4 pb-4 bg-white border-b border-gray-200 -mx-4';
+      locationSection.innerHTML = `
+        <div class="flex gap-2">
+          <div class="flex-1 relative">
+            <input
+              type="text"
+              id="location-input"
+              placeholder="위치를 입력하세요 (예: 강남역, 홍대입구)"
+              class="w-full px-4 py-3 pr-10 border-2 border-gray-200 rounded-xl text-base focus:outline-none focus:border-primary transition-colors"
+            />
+            <button
+              type="button"
+              id="btn-use-current-location"
+              class="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center text-gray-400 hover:text-primary transition-colors"
+              title="현재 위치 사용"
+            >
+              📍
+            </button>
+          </div>
+          <button
+            type="button"
+            id="btn-search-restaurants"
+            class="px-6 py-3 bg-primary text-white font-semibold rounded-xl hover:bg-primary-dark transition-colors"
+          >
+            검색
+          </button>
+        </div>
+        <div id="location-status" class="mt-2 text-sm text-gray-500 hidden"></div>
+      `;
+
+      header.insertAdjacentElement('afterend', locationSection);
+
+      // 이벤트 리스너 설정
+      this.setupEventListeners();
+    }
+  }
+
+  /**
+   * 이벤트 리스너 설정
+   */
+  setupEventListeners() {
+    const locationInput = document.getElementById('location-input');
+    const searchBtn = document.getElementById('btn-search-restaurants');
+    const currentLocationBtn = document.getElementById('btn-use-current-location');
+
+    if (searchBtn) {
+      searchBtn.addEventListener('click', () => this.handleSearch());
+    }
+
+    if (locationInput) {
+      locationInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          this.handleSearch();
+        }
+      });
+    }
+
+    if (currentLocationBtn) {
+      currentLocationBtn.addEventListener('click', () => this.handleUseCurrentLocation());
+    }
+  }
+
+  /**
+   * 검색 핸들러
+   */
+  async handleSearch() {
+    const locationInput = document.getElementById('location-input');
+    const location = locationInput?.value.trim();
+
+    if (!location) {
+      this.showStatus('위치를 입력해 주세요.', 'error');
+      return;
+    }
+
+    await this.searchNearbyRestaurants(location);
+  }
+
+  /**
+   * 현재 위치 사용 핸들러
+   */
+  async handleUseCurrentLocation() {
+    const locationInput = document.getElementById('location-input');
+
+    this.showStatus('현재 위치를 확인 중...', 'info');
+
+    try {
+      const position = await this.locationManager.getCurrentPosition();
+      // 위치를 가져왔지만 아직 역지오코딩이 안되므로 안내 메시지 표시
+      this.showStatus(
+        `위치 확인됨 (${position.latitude.toFixed(4)}, ${position.longitude.toFixed(4)}). 현재 좌표 기반 검색은 준비 중입니다. 주소를 직접 입력해 주세요.`,
+        'warning'
+      );
+    } catch (error) {
+      this.showStatus(error.message, 'error');
+    }
+  }
+
+  /**
+   * 주변 음식점 검색 및 표시
+   */
+  async searchNearbyRestaurants(location, category = '') {
+    this.currentLocation = location;
+    this.currentCategory = category;
+
+    this.showLoadingState();
+
+    try {
+      const result = await this.locationManager.fetchNearbyRestaurants(location, category, 10);
+      this.renderRestaurantList(result.restaurants, result.meta);
+      this.showStatus(`'${result.meta.location}' 주변 음식점 ${result.restaurants.length}개를 찾았습니다.`, 'success');
+    } catch (error) {
+      this.showErrorState(error.message);
+    }
+  }
+
+  /**
+   * 로딩 상태 표시
+   */
+  showLoadingState() {
+    if (!this.container) return;
+
+    this.container.innerHTML = `
+      <div class="flex flex-col items-center justify-center py-16 text-center">
+        <div class="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mb-4"></div>
+        <p class="text-gray-500">주변 음식점을 검색 중입니다...</p>
+      </div>
+    `;
+  }
+
+  /**
+   * 에러 상태 표시
+   */
+  showErrorState(message) {
+    if (!this.container) return;
+
+    this.container.innerHTML = `
+      <div class="flex flex-col items-center justify-center py-16 text-center">
+        <span class="text-6xl mb-4 opacity-50" aria-hidden="true">😢</span>
+        <h3 class="text-lg font-semibold text-gray-700 mb-2">검색 실패</h3>
+        <p class="text-sm text-gray-500 mb-6">${message}</p>
+        <button
+          type="button"
+          class="px-6 py-3 bg-primary text-white font-semibold rounded-xl hover:bg-primary-dark transition-colors"
+          onclick="nearbyRestaurantsUI.handleSearch()"
+        >
+          다시 시도
+        </button>
+      </div>
+    `;
+
+    this.showStatus(message, 'error');
+  }
+
+  /**
+   * 빈 상태 표시
+   */
+  showEmptyState() {
+    if (!this.container) return;
+
+    this.container.innerHTML = `
+      <div class="flex flex-col items-center justify-center py-16 text-center">
+        <span class="text-6xl mb-4 opacity-50" aria-hidden="true">🔍</span>
+        <h3 class="text-lg font-semibold text-gray-700 mb-2">검색 결과가 없습니다</h3>
+        <p class="text-sm text-gray-500">다른 위치나 카테고리로 검색해 보세요.</p>
+      </div>
+    `;
+  }
+
+  /**
+   * 식당 목록 렌더링
+   */
+  renderRestaurantList(restaurants, meta) {
+    if (!this.container) return;
+
+    if (!restaurants || restaurants.length === 0) {
+      this.showEmptyState();
+      return;
+    }
+
+    const html = restaurants.map((restaurant, index) => this.createRestaurantCard(restaurant, index)).join('');
+    this.container.innerHTML = html;
+
+    // 애니메이션 효과 (staggered)
+    const cards = this.container.querySelectorAll('article');
+    cards.forEach((card, index) => {
+      card.style.opacity = '0';
+      card.style.transform = 'translateY(20px)';
+      setTimeout(() => {
+        card.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+        card.style.opacity = '1';
+        card.style.transform = 'translateY(0)';
+      }, index * 50);
+    });
+  }
+
+  /**
+   * 식당 카드 HTML 생성
+   */
+  createRestaurantCard(restaurant, index) {
+    const emoji = this.getCategoryEmoji(restaurant.category);
+    const address = restaurant.address || '';
+    const shortAddress = address.length > 30 ? address.substring(0, 30) + '...' : address;
+
+    return `
+      <article class="flex gap-4 p-4 bg-white rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer" data-restaurant-id="${index}">
+        <div class="w-20 h-20 bg-bg-secondary rounded-xl flex items-center justify-center text-2xl flex-shrink-0">
+          <span aria-hidden="true">${emoji}</span>
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-start justify-between mb-1">
+            <h3 class="text-base font-semibold text-gray-900 truncate">${restaurant.title}</h3>
+          </div>
+          <p class="text-sm text-gray-500 mb-2">${restaurant.category}</p>
+          <div class="flex items-center gap-4 text-xs text-gray-400">
+            <span class="flex items-center gap-1 truncate" title="${address}">
+              <span aria-hidden="true">📍</span>
+              <span>${shortAddress}</span>
+            </span>
+          </div>
+          ${restaurant.telephone ? `
+            <div class="mt-1 text-xs text-gray-400">
+              <span aria-hidden="true">📞</span>
+              <a href="tel:${restaurant.telephone}" class="text-primary hover:underline">${restaurant.telephone}</a>
+            </div>
+          ` : ''}
+        </div>
+      </article>
+    `;
+  }
+
+  /**
+   * 카테고리에 맞는 이모지 반환
+   */
+  getCategoryEmoji(category) {
+    if (!category) return '🍽️';
+
+    const categoryLower = category.toLowerCase();
+    const emojiMap = {
+      '한식': '🍲',
+      '일식': '🍣',
+      '중식': '🥟',
+      '양식': '🍝',
+      '분식': '🍜',
+      '치킨': '🍗',
+      '피자': '🍕',
+      '버거': '🍔',
+      '카페': '☕',
+      '베이커리': '🥐',
+      '디저트': '🍰',
+      '술집': '🍺',
+      '고기': '🥩',
+      '해산물': '🦐',
+      '샐러드': '🥗',
+      '멕시칸': '🌮',
+      '태국': '🍛',
+      '베트남': '🍜',
+      '인도': '🍛'
+    };
+
+    for (const [key, emoji] of Object.entries(emojiMap)) {
+      if (categoryLower.includes(key)) {
+        return emoji;
+      }
+    }
+
+    return '🍽️';
+  }
+
+  /**
+   * 상태 메시지 표시
+   */
+  showStatus(message, type = 'info') {
+    const statusEl = document.getElementById('location-status');
+    if (!statusEl) return;
+
+    statusEl.classList.remove('hidden', 'text-gray-500', 'text-green-600', 'text-red-600', 'text-amber-600');
+
+    switch (type) {
+      case 'success':
+        statusEl.classList.add('text-green-600');
+        break;
+      case 'error':
+        statusEl.classList.add('text-red-600');
+        break;
+      case 'warning':
+        statusEl.classList.add('text-amber-600');
+        break;
+      default:
+        statusEl.classList.add('text-gray-500');
+    }
+
+    statusEl.textContent = message;
+  }
+}
+
+// Global instances
+const locationManager = new LocationManager();
+let nearbyRestaurantsUI = null;
 
 // ===================
 // DOM Elements
@@ -421,13 +859,23 @@ document.addEventListener('DOMContentLoaded', () => {
   gachaAnimator.init();
   confettiSystem.init();
 
+  // Initialize nearby restaurants UI
+  nearbyRestaurantsUI = new NearbyRestaurantsUI(locationManager);
+  nearbyRestaurantsUI.init();
+
   // Navigation click handlers
   document.querySelectorAll('[data-nav]').forEach(navItem => {
     navItem.addEventListener('click', (e) => {
       e.preventDefault();
       const target = navItem.getAttribute('data-nav');
       if (target === 'home') showScreen('home');
-      else if (target === 'restaurants') showScreen('restaurants');
+      else if (target === 'restaurants') {
+        showScreen('restaurants');
+        // 화면 전환 후 UI 초기화 확인
+        if (nearbyRestaurantsUI) {
+          nearbyRestaurantsUI.setupLocationInput();
+        }
+      }
       else if (target === 'gacha') {
         gachaAnimator.reset();
         showScreen('gacha');
@@ -444,6 +892,10 @@ document.addEventListener('DOMContentLoaded', () => {
       switch(action) {
         case 'nearby':
           showScreen('restaurants');
+          // 화면 전환 후 UI 초기화 확인
+          if (nearbyRestaurantsUI) {
+            nearbyRestaurantsUI.setupLocationInput();
+          }
           break;
         case 'random':
           gachaAnimator.reset();
