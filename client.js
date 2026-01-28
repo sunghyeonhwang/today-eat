@@ -1114,9 +1114,90 @@ function handleSelectClick() {
     selectBtn.classList.add('select-btn--celebrating');
     setTimeout(() => {
       selectBtn.classList.remove('select-btn--celebrating');
-      // Navigate to restaurant detail or show confirmation
-      alert(`${selectedRestaurant.name}(으)로 결정했어요! 맛있게 드세요! 🎉`);
+
+      // 식당 선택 확인 및 리뷰 작성 옵션 표시
+      if (selectedRestaurant) {
+        showSelectionConfirmation(selectedRestaurant);
+      }
     }, 500);
+  }
+}
+
+/**
+ * 식당 선택 확인 모달 표시
+ */
+function showSelectionConfirmation(restaurant) {
+  // 기존 모달 제거
+  const existingModal = document.getElementById('selection-confirm-modal');
+  if (existingModal) {
+    existingModal.remove();
+  }
+
+  const modal = document.createElement('div');
+  modal.id = 'selection-confirm-modal';
+  modal.className = 'fixed inset-0 bg-black/50 flex items-center justify-center z-[300] opacity-0 transition-opacity';
+  modal.innerHTML = `
+    <div class="w-[90%] max-w-sm bg-white rounded-2xl shadow-xl transform scale-95 transition-transform overflow-hidden">
+      <div class="p-6 text-center">
+        <div class="text-6xl mb-4">${restaurant.emoji || '🍽️'}</div>
+        <h3 class="text-xl font-bold text-gray-900 mb-2">${restaurant.name}</h3>
+        <p class="text-gray-500 mb-6">맛있게 드셨나요? 리뷰를 남겨보세요!</p>
+        <div class="flex flex-col gap-3">
+          <button type="button" class="w-full py-4 bg-primary text-white font-bold rounded-xl hover:bg-primary-dark transition-colors" id="btn-write-review">
+            ✏️ 리뷰 작성하기
+          </button>
+          <button type="button" class="w-full py-4 bg-gray-100 text-gray-700 font-semibold rounded-xl hover:bg-gray-200 transition-colors" id="btn-close-confirm">
+            나중에 할게요
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+
+  // 애니메이션으로 표시
+  requestAnimationFrame(() => {
+    modal.classList.remove('opacity-0');
+    modal.classList.add('opacity-100');
+    modal.querySelector('.bg-white').classList.remove('scale-95');
+    modal.classList.add('scale-100');
+  });
+
+  // 이벤트 리스너
+  document.getElementById('btn-write-review').addEventListener('click', () => {
+    closeSelectionConfirmation();
+    // 리뷰 작성 화면으로 이동
+    if (reviewWriteUI) {
+      reviewWriteUI.resetForm();
+      reviewWriteUI.setRestaurant(restaurant);
+    }
+    showScreen('reviewWrite');
+  });
+
+  document.getElementById('btn-close-confirm').addEventListener('click', () => {
+    closeSelectionConfirmation();
+    // 홈 화면으로 이동
+    showScreen('home');
+  });
+
+  // 배경 클릭 시 닫기
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) {
+      closeSelectionConfirmation();
+    }
+  });
+}
+
+/**
+ * 선택 확인 모달 닫기
+ */
+function closeSelectionConfirmation() {
+  const modal = document.getElementById('selection-confirm-modal');
+  if (modal) {
+    modal.classList.add('opacity-0');
+    modal.querySelector('.bg-white')?.classList.add('scale-95');
+    setTimeout(() => modal.remove(), 200);
   }
 }
 
@@ -1138,6 +1219,10 @@ document.addEventListener('DOMContentLoaded', () => {
   // Initialize review history UI
   reviewHistoryUI = new ReviewHistoryUI();
   reviewHistoryUI.init();
+
+  // Initialize review write UI
+  reviewWriteUI = new ReviewWriteUI();
+  reviewWriteUI.init();
 
   // Initialize gacha location search UI
   initGachaLocationSearch();
@@ -1208,29 +1293,22 @@ document.addEventListener('DOMContentLoaded', () => {
           toggleFilterModal(false);
           break;
         case 'write':
+          // 리뷰 작성 화면으로 이동
+          if (reviewWriteUI) {
+            reviewWriteUI.resetForm();
+            // 선택된 식당이 있으면 폼에 설정
+            if (selectedRestaurant) {
+              reviewWriteUI.setRestaurant(selectedRestaurant);
+            }
+          }
           showScreen('reviewWrite');
           break;
       }
     });
   });
 
-  // Rating stars interaction
-  document.querySelectorAll('[data-rating]').forEach(star => {
-    star.addEventListener('click', () => {
-      const rating = parseInt(star.getAttribute('data-rating'));
-      updateRatingStars(rating);
-    });
-  });
-
-  // Tag selection
-  document.querySelectorAll('[data-tag]').forEach(tag => {
-    tag.addEventListener('click', () => {
-      tag.classList.toggle('bg-primary');
-      tag.classList.toggle('text-white');
-      tag.classList.toggle('bg-gray-100');
-      tag.classList.toggle('text-gray-600');
-    });
-  });
+  // Note: Rating stars and tag selection are now handled by ReviewWriteUI class
+  // The class handles click, hover effects, and state management properly
 });
 
 // ===================
@@ -1854,3 +1932,380 @@ class ReviewHistoryUI {
 
 // Global review history UI instance
 let reviewHistoryUI = null;
+
+// ===================
+// Review Write UI Manager
+// ===================
+class ReviewWriteUI {
+  constructor() {
+    this.formContainer = null;
+    this.currentRating = 0;
+    this.selectedTags = new Set();
+    this.sessionId = null;
+    this.isSubmitting = false;
+  }
+
+  /**
+   * 세션 ID 생성 또는 가져오기
+   */
+  getSessionId() {
+    let sessionId = localStorage.getItem('what_eat_today_session_id');
+    if (!sessionId) {
+      sessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substring(2, 11);
+      localStorage.setItem('what_eat_today_session_id', sessionId);
+    }
+    return sessionId;
+  }
+
+  /**
+   * 초기화
+   */
+  init() {
+    this.sessionId = this.getSessionId();
+    this.formContainer = document.querySelector('[data-form="review"]');
+    this.setupEventListeners();
+  }
+
+  /**
+   * 이벤트 리스너 설정
+   */
+  setupEventListeners() {
+    // 별점 선택 이벤트
+    document.querySelectorAll('[data-rating]').forEach(star => {
+      star.addEventListener('click', (e) => {
+        const rating = parseInt(star.getAttribute('data-rating'));
+        this.setRating(rating);
+      });
+
+      // 호버 효과
+      star.addEventListener('mouseenter', (e) => {
+        const rating = parseInt(star.getAttribute('data-rating'));
+        this.previewRating(rating);
+      });
+
+      star.addEventListener('mouseleave', () => {
+        this.updateRatingDisplay(this.currentRating);
+      });
+    });
+
+    // 태그 선택 이벤트
+    document.querySelectorAll('[data-tag]').forEach(tag => {
+      tag.addEventListener('click', () => {
+        this.toggleTag(tag);
+      });
+    });
+
+    // 폼 제출 이벤트
+    if (this.formContainer) {
+      this.formContainer.addEventListener('submit', (e) => {
+        e.preventDefault();
+        this.handleSubmit();
+      });
+    }
+
+    // 저장 버튼 이벤트 (헤더의 저장 버튼)
+    const saveBtn = document.querySelector('[data-action="save"]');
+    if (saveBtn) {
+      saveBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        this.handleSubmit();
+      });
+    }
+  }
+
+  /**
+   * 별점 설정
+   */
+  setRating(rating) {
+    this.currentRating = rating;
+    this.updateRatingDisplay(rating);
+  }
+
+  /**
+   * 별점 미리보기 (호버 시)
+   */
+  previewRating(rating) {
+    document.querySelectorAll('[data-rating]').forEach(star => {
+      const starRating = parseInt(star.getAttribute('data-rating'));
+      if (starRating <= rating) {
+        star.classList.add('text-amber-400');
+        star.classList.remove('text-gray-300');
+      } else {
+        star.classList.remove('text-amber-400');
+        star.classList.add('text-gray-300');
+      }
+    });
+  }
+
+  /**
+   * 별점 표시 업데이트
+   */
+  updateRatingDisplay(rating) {
+    document.querySelectorAll('[data-rating]').forEach(star => {
+      const starRating = parseInt(star.getAttribute('data-rating'));
+      if (starRating <= rating) {
+        star.classList.add('text-amber-400');
+        star.classList.remove('text-gray-300');
+      } else {
+        star.classList.remove('text-amber-400');
+        star.classList.add('text-gray-300');
+      }
+    });
+  }
+
+  /**
+   * 태그 토글
+   */
+  toggleTag(tagElement) {
+    const tagValue = tagElement.getAttribute('data-tag');
+
+    if (this.selectedTags.has(tagValue)) {
+      this.selectedTags.delete(tagValue);
+      tagElement.classList.remove('bg-primary', 'text-white');
+      tagElement.classList.add('bg-gray-100', 'text-gray-600');
+    } else {
+      this.selectedTags.add(tagValue);
+      tagElement.classList.remove('bg-gray-100', 'text-gray-600');
+      tagElement.classList.add('bg-primary', 'text-white');
+    }
+  }
+
+  /**
+   * 리뷰 화면에 식당 정보 설정
+   */
+  setRestaurant(restaurant) {
+    const reviewScreen = document.getElementById('screen-review-write');
+    if (!reviewScreen || !restaurant) return;
+
+    // 식당 정보 영역 찾기
+    const restaurantInfoContainer = reviewScreen.querySelector('[data-form="review"] > div:first-child');
+    if (restaurantInfoContainer) {
+      const infoBox = restaurantInfoContainer.querySelector('.flex.items-center.gap-4');
+      if (infoBox) {
+        const emoji = restaurant.emoji || this.getCategoryEmoji(restaurant.category);
+        const name = restaurant.name || restaurant.title || '식당명';
+        const category = restaurant.category || '';
+
+        infoBox.innerHTML = `
+          <div class="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center text-xl">
+            <span aria-hidden="true">${emoji}</span>
+          </div>
+          <div>
+            <p class="text-base font-semibold text-gray-900">${name}</p>
+            <p class="text-sm text-gray-500">${category}</p>
+          </div>
+        `;
+      }
+    }
+  }
+
+  /**
+   * 카테고리에 맞는 이모지 반환
+   */
+  getCategoryEmoji(category) {
+    if (!category) return '🍽️';
+
+    const categoryLower = category.toLowerCase();
+    const emojiMap = {
+      '한식': '🍲', '일식': '🍣', '중식': '🥟', '양식': '🍝',
+      '분식': '🍜', '치킨': '🍗', '피자': '🍕', '버거': '🍔',
+      '카페': '☕', '베이커리': '🥐', '디저트': '🍰', '술집': '🍺',
+      '고기': '🥩', '해산물': '🦐', '샐러드': '🥗', '멕시칸': '🌮',
+      '태국': '🍛', '베트남': '🍜', '인도': '🍛', '국수': '🍜',
+      '카레': '🍛', '초밥': '🍣', '라멘': '🍜', '찌개': '🍲'
+    };
+
+    for (const [key, emoji] of Object.entries(emojiMap)) {
+      if (categoryLower.includes(key)) {
+        return emoji;
+      }
+    }
+
+    return '🍽️';
+  }
+
+  /**
+   * 폼 초기화
+   */
+  resetForm() {
+    // 별점 초기화
+    this.currentRating = 0;
+    this.updateRatingDisplay(0);
+
+    // 태그 초기화
+    this.selectedTags.clear();
+    document.querySelectorAll('[data-tag]').forEach(tag => {
+      tag.classList.remove('bg-primary', 'text-white');
+      tag.classList.add('bg-gray-100', 'text-gray-600');
+    });
+
+    // 텍스트 영역 초기화
+    const textarea = document.getElementById('review-content');
+    if (textarea) {
+      textarea.value = '';
+    }
+  }
+
+  /**
+   * 폼 유효성 검사
+   */
+  validateForm() {
+    const errors = [];
+
+    if (!selectedRestaurant) {
+      errors.push('식당을 먼저 선택해 주세요.');
+    }
+
+    if (this.currentRating === 0) {
+      errors.push('별점을 선택해 주세요.');
+    }
+
+    const content = document.getElementById('review-content')?.value.trim();
+    if (!content) {
+      errors.push('리뷰 내용을 입력해 주세요.');
+    }
+
+    return errors;
+  }
+
+  /**
+   * 리뷰 제출 처리
+   */
+  async handleSubmit() {
+    if (this.isSubmitting) return;
+
+    // 유효성 검사
+    const errors = this.validateForm();
+    if (errors.length > 0) {
+      this.showNotification(errors.join('\n'), 'error');
+      return;
+    }
+
+    this.isSubmitting = true;
+    this.setSubmitButtonState(true);
+
+    try {
+      const content = document.getElementById('review-content')?.value.trim();
+
+      // restaurant_id 결정: 가챠 결과의 경우 임시 ID 생성 (API 식당이므로 DB에 없음)
+      // 실제로는 식당을 먼저 등록하거나, 외부 식당 정보를 저장하는 로직 필요
+      // 현재는 selectedRestaurant의 id 또는 name 기반으로 식당 식별
+      const restaurantId = selectedRestaurant.id ||
+                           selectedRestaurant.name ||
+                           'restaurant_' + Date.now();
+
+      const reviewData = {
+        restaurant_id: restaurantId.toString(),
+        session_id: this.sessionId,
+        rating: this.currentRating,
+        content: content,
+        tags: Array.from(this.selectedTags),
+        is_public: true
+      };
+
+      const response = await fetch('/api/reviews', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(reviewData)
+      });
+
+      const result = await response.json();
+
+      if (!result.success) {
+        throw new Error(result.error || '리뷰 저장에 실패했습니다.');
+      }
+
+      // 성공 피드백
+      this.showNotification('리뷰가 저장되었습니다! 🎉', 'success');
+
+      // 폼 초기화
+      this.resetForm();
+
+      // 잠시 후 리뷰 목록으로 이동
+      setTimeout(() => {
+        showScreen('reviews');
+        // 리뷰 목록 새로고침
+        if (reviewHistoryUI) {
+          reviewHistoryUI.loadReviews();
+        }
+      }, 1500);
+
+    } catch (error) {
+      console.error('리뷰 저장 오류:', error);
+      this.showNotification(error.message || '리뷰 저장 중 오류가 발생했습니다.', 'error');
+    } finally {
+      this.isSubmitting = false;
+      this.setSubmitButtonState(false);
+    }
+  }
+
+  /**
+   * 제출 버튼 상태 설정
+   */
+  setSubmitButtonState(isLoading) {
+    const submitBtn = this.formContainer?.querySelector('[type="submit"]');
+    const saveBtn = document.querySelector('[data-action="save"]');
+
+    if (submitBtn) {
+      submitBtn.disabled = isLoading;
+      if (isLoading) {
+        submitBtn.innerHTML = '<span class="inline-block w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></span>저장 중...';
+      } else {
+        submitBtn.innerHTML = '리뷰 저장하기';
+      }
+    }
+
+    if (saveBtn) {
+      saveBtn.disabled = isLoading;
+      if (isLoading) {
+        saveBtn.textContent = '저장 중...';
+      } else {
+        saveBtn.textContent = '저장';
+      }
+    }
+  }
+
+  /**
+   * 알림 메시지 표시
+   */
+  showNotification(message, type = 'info') {
+    // 기존 알림 제거
+    const existingNotification = document.getElementById('review-notification');
+    if (existingNotification) {
+      existingNotification.remove();
+    }
+
+    // 색상 설정
+    const colors = {
+      success: 'bg-green-500',
+      error: 'bg-red-500',
+      info: 'bg-blue-500',
+      warning: 'bg-amber-500'
+    };
+
+    const notification = document.createElement('div');
+    notification.id = 'review-notification';
+    notification.className = `fixed top-20 left-1/2 -translate-x-1/2 px-6 py-3 ${colors[type]} text-white text-sm font-medium rounded-xl shadow-lg z-[300] transform transition-all duration-300 opacity-0 -translate-y-4`;
+    notification.innerHTML = `<span class="whitespace-pre-line">${message}</span>`;
+
+    document.body.appendChild(notification);
+
+    // 애니메이션으로 표시
+    requestAnimationFrame(() => {
+      notification.classList.remove('opacity-0', '-translate-y-4');
+      notification.classList.add('opacity-100', 'translate-y-0');
+    });
+
+    // 자동 숨김
+    setTimeout(() => {
+      notification.classList.add('opacity-0', '-translate-y-4');
+      notification.classList.remove('opacity-100', 'translate-y-0');
+      setTimeout(() => notification.remove(), 300);
+    }, 3000);
+  }
+}
+
+// Global review write UI instance
+let reviewWriteUI = null;
