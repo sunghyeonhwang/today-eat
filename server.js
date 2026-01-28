@@ -40,7 +40,9 @@ const app = express();
 // Middleware
 app.use(cors());
 app.use(express.json());
+// Serve static files from root and public directory
 app.use(express.static(path.join(__dirname)));
+app.use(express.static(path.join(__dirname, 'public')));
 
 // ===================
 // Health Check
