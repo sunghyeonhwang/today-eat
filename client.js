@@ -380,7 +380,13 @@ class NearbyRestaurantsUI {
    * 식당 카드 HTML 생성
    */
   createRestaurantCard(restaurant, index) {
-    const emoji = this.getCategoryEmoji(restaurant.category);
+    // category가 객체인 경우 문자열로 변환
+    const categoryStr = typeof restaurant.category === 'object' && restaurant.category !== null
+      ? (restaurant.category.sub || restaurant.category.main || '음식점')
+      : (restaurant.category || '음식점');
+    
+    const emoji = this.getCategoryEmoji(categoryStr);
+    const name = restaurant.name || restaurant.title || '식당명';
     const address = restaurant.address || '';
     const shortAddress = address.length > 30 ? address.substring(0, 30) + '...' : address;
 
@@ -391,9 +397,9 @@ class NearbyRestaurantsUI {
         </div>
         <div class="flex-1 min-w-0">
           <div class="flex items-start justify-between mb-1">
-            <h3 class="text-base font-semibold text-gray-900 truncate">${restaurant.title}</h3>
+            <h3 class="text-base font-semibold text-gray-900 truncate">${name}</h3>
           </div>
-          <p class="text-sm text-gray-500 mb-2">${restaurant.category}</p>
+          <p class="text-sm text-gray-500 mb-2">${categoryStr}</p>
           <div class="flex items-center gap-4 text-xs text-gray-400">
             <span class="flex items-center gap-1 truncate" title="${address}">
               <span aria-hidden="true">📍</span>
@@ -544,11 +550,18 @@ class GachaDataManager {
    * API 데이터를 가챠용 형식으로 변환
    */
   formatRestaurantForGacha(restaurant, index) {
+    // category가 객체인 경우 문자열로 변환
+    const categoryStr = typeof restaurant.category === 'object' && restaurant.category !== null
+      ? (restaurant.category.sub || restaurant.category.main || '음식점')
+      : (restaurant.category || '음식점');
+    
+    const name = restaurant.name || restaurant.title || '식당명';
+    
     return {
       id: index + 1,
-      emoji: this.getCategoryEmoji(restaurant.category),
-      name: restaurant.title,
-      category: restaurant.category || '음식점',
+      emoji: this.getCategoryEmoji(categoryStr),
+      name: name,
+      category: categoryStr,
       rating: (Math.random() * 1 + 4).toFixed(1), // API에서 제공하지 않으면 임의 생성 (4.0~5.0)
       distance: restaurant.distance || '-',
       price: restaurant.price || '-',
@@ -2128,9 +2141,13 @@ class ReviewWriteUI {
     if (restaurantInfoContainer) {
       const infoBox = restaurantInfoContainer.querySelector('.flex.items-center.gap-4');
       if (infoBox) {
-        const emoji = restaurant.emoji || this.getCategoryEmoji(restaurant.category);
+        // category가 객체인 경우 문자열로 변환
+        const categoryStr = typeof restaurant.category === 'object' && restaurant.category !== null
+          ? (restaurant.category.sub || restaurant.category.main || '음식점')
+          : (restaurant.category || '음식점');
+        
+        const emoji = restaurant.emoji || this.getCategoryEmoji(categoryStr);
         const name = restaurant.name || restaurant.title || '식당명';
-        const category = restaurant.category || '';
 
         infoBox.innerHTML = `
           <div class="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center text-xl">
@@ -2138,7 +2155,7 @@ class ReviewWriteUI {
           </div>
           <div>
             <p class="text-base font-semibold text-gray-900">${name}</p>
-            <p class="text-sm text-gray-500">${category}</p>
+            <p class="text-sm text-gray-500">${categoryStr}</p>
           </div>
         `;
       }
