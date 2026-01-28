@@ -233,7 +233,7 @@ function removeDuplicates(restaurants) {
 }
 
 /**
- * 좌표를 주소로 변환 (역지오코딩)
+ * 좌표를 주소로 변환 (역지오코딩) - 카카오 API 사용
  * @param {Object} options - 좌표 정보
  * @param {number} options.latitude - 위도 (WGS84)
  * @param {number} options.longitude - 경도 (WGS84)
@@ -246,63 +246,58 @@ async function reverseGeocode(options) {
     throw new Error('위도(latitude)와 경도(longitude)는 필수입니다.');
   }
 
-  const clientId = process.env.NAVER_CLIENT_ID;
-  const clientSecret = process.env.NAVER_CLIENT_SECRET;
+  const kakaoApiKey = process.env.KAKAO_REST_API_KEY;
 
-  if (!clientId || !clientSecret) {
-    throw new Error('네이버 API 인증 정보가 설정되지 않았습니다.');
+  if (!kakaoApiKey) {
+    throw new Error('카카오 API 키가 설정되지 않았습니다. KAKAO_REST_API_KEY를 확인하세요.');
   }
 
-  // 네이버 역지오코딩 API
-  const coords = `${longitude},${latitude}`; // 경도,위도 순서
-  const url = `https://naveropenapi.apigw.ntruss.com/map-reversegeocode/v2/gc?coords=${coords}&orders=roadaddr,addr&output=json`;
+  // 카카오 역지오코딩 API
+  const url = `https://dapi.kakao.com/v2/local/geo/coord2address.json?x=${longitude}&y=${latitude}`;
 
   const response = await fetch(url, {
     method: 'GET',
     headers: {
-      'X-NCP-APIGW-API-KEY-ID': clientId,
-      'X-NCP-APIGW-API-KEY': clientSecret
+      'Authorization': `KakaoAK ${kakaoApiKey}`
     }
   });
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(`네이버 역지오코딩 API 호출 실패: ${response.status} - ${errorText}`);
+    throw new Error(`카카오 역지오코딩 API 호출 실패: ${response.status} - ${errorText}`);
   }
 
   const data = await response.json();
 
   // 응답 파싱
-  if (data.status.code !== 0 || !data.results || data.results.length === 0) {
+  if (!data.documents || data.documents.length === 0) {
     throw new Error('해당 좌표의 주소를 찾을 수 없습니다.');
   }
 
-  const result = data.results[0];
-  const region = result.region;
-  const land = result.land;
+  const document = data.documents[0];
+  const roadAddress = document.road_address;
+  const address = document.address;
 
-  // 도로명 주소 또는 지번 주소 반환
-  let address = '';
+  // 도로명 주소 우선, 없으면 지번 주소 사용
+  let fullAddress = '';
   let shortAddress = '';
 
-  if (region) {
-    // 지역 정보로 간단한 주소 생성
-    const area1 = region.area1?.name || ''; // 시/도
-    const area2 = region.area2?.name || ''; // 구/군
-    const area3 = region.area3?.name || ''; // 동/읍/면
-    
-    shortAddress = `${area2} ${area3}`.trim() || area1;
-    address = `${area1} ${area2} ${area3}`.trim();
+  if (roadAddress) {
+    fullAddress = roadAddress.address_name;
+    shortAddress = `${roadAddress.region_2depth_name} ${roadAddress.region_3depth_name}`.trim();
+  } else if (address) {
+    fullAddress = address.address_name;
+    shortAddress = `${address.region_2depth_name} ${address.region_3depth_name}`.trim();
   }
 
   return {
-    address: address,
+    address: fullAddress,
     shortAddress: shortAddress,
-    roadAddress: land?.name || '',
+    roadAddress: roadAddress?.address_name || '',
     region: {
-      sido: region?.area1?.name || '',
-      sigungu: region?.area2?.name || '',
-      dong: region?.area3?.name || ''
+      sido: address?.region_1depth_name || '',
+      sigungu: address?.region_2depth_name || '',
+      dong: address?.region_3depth_name || ''
     },
     coordinates: {
       latitude,
