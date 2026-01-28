@@ -222,23 +222,29 @@
            Screen 4: Gacha Result Screen
            ========================================== -->
       <section id="screen-gacha-result" class="screen hidden" aria-labelledby="result-title">
-        <div class="flex flex-col items-center px-8 py-8 text-center">
-          <span class="inline-flex items-center gap-1 px-4 py-1 bg-accent text-gray-800 text-sm font-semibold rounded-full mb-6">
+        <div class="flex flex-col items-center px-6 py-6 text-center">
+          <!-- 배지 -->
+          <span class="inline-flex items-center gap-1 px-4 py-1 bg-accent text-gray-800 text-sm font-semibold rounded-full mb-4">
             <span aria-hidden="true">🎉</span>
             <span>오늘의 메뉴</span>
           </span>
 
-          <div class="w-40 h-40 bg-bg-secondary rounded-3xl flex items-center justify-center text-6xl mb-6">
+          <!-- 이모지 컨테이너 -->
+          <div class="w-40 h-40 bg-bg-secondary rounded-3xl flex items-center justify-center text-6xl mb-4 shadow-lg gacha-result-emoji-container">
             <span aria-hidden="true">🍛</span>
           </div>
 
+          <!-- 식당 이름 -->
           <h1 id="result-title" class="text-2xl font-bold text-gray-900 mb-1">황금카레</h1>
-          <p class="text-base text-gray-500 mb-4">일식 · 카레</p>
 
-          <div class="flex items-center justify-center gap-6 mb-8">
+          <!-- 카테고리 -->
+          <p class="text-base text-gray-500 mb-3">일식 · 카레</p>
+
+          <!-- 기본 정보 (별점, 거리, 가격) -->
+          <div id="gacha-result-info" class="flex items-center justify-center gap-6 mb-4">
             <span class="flex items-center gap-1 text-sm text-gray-600">
               <span aria-hidden="true">⭐</span>
-              <span>4.7</span>
+              <span class="font-semibold">4.7</span>
             </span>
             <span class="flex items-center gap-1 text-sm text-gray-600">
               <span aria-hidden="true">📍</span>
@@ -250,6 +256,30 @@
             </span>
           </div>
 
+          <!-- 주소 및 전화번호 -->
+          <div id="gacha-result-address" class="w-full max-w-xs mb-4 hidden">
+            <div class="flex items-start gap-2 text-sm text-gray-500">
+              <span aria-hidden="true" class="flex-shrink-0">🏠</span>
+              <span class="text-left">서울시 강남구 역삼동 123-45</span>
+            </div>
+            <div class="flex items-center gap-2 text-sm text-gray-500 mt-1">
+              <span aria-hidden="true">📞</span>
+              <a href="tel:02-1234-5678" class="text-primary hover:underline">02-1234-5678</a>
+            </div>
+          </div>
+
+          <!-- 최근 리뷰 -->
+          <div id="gacha-result-review" class="w-full max-w-xs mb-6 hidden">
+            <div class="bg-bg-secondary rounded-xl p-4 text-left">
+              <div class="flex items-center gap-2 mb-2">
+                <span class="text-xs font-semibold text-gray-500">💬 최근 리뷰</span>
+                <span class="flex text-amber-400 text-xs">⭐⭐⭐⭐⭐</span>
+              </div>
+              <p class="text-sm text-gray-700 leading-relaxed">"정말 맛있어요! 다음에 또 방문할게요 👍"</p>
+            </div>
+          </div>
+
+          <!-- 액션 버튼 -->
           <div class="flex gap-4 w-full max-w-xs">
             <button class="flex-1 py-4 border-2 border-gray-300 text-gray-700 rounded-xl text-base font-semibold hover:border-gray-400 hover:bg-gray-50 transition-all" type="button" data-action="retry">
               다시 뽑기
