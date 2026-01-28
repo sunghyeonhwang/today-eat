@@ -395,7 +395,7 @@ class NearbyRestaurantsUI {
    * 카테고리에 맞는 이모지 반환
    */
   getCategoryEmoji(category) {
-    if (!category) return '🍽️';
+    if (!category || typeof category !== 'string') return '🍽️';
 
     const categoryLower = category.toLowerCase();
     const emojiMap = {
@@ -475,7 +475,7 @@ class GachaDataManager {
    * 카테고리에 맞는 이모지 반환
    */
   getCategoryEmoji(category) {
-    if (!category) return '🍽️';
+    if (!category || typeof category !== 'string') return '🍽️';
 
     const categoryLower = category.toLowerCase();
     const emojiMap = {
@@ -1795,7 +1795,7 @@ class ReviewHistoryUI {
    * 카테고리 이모지 반환
    */
   getCategoryEmoji(category) {
-    if (!category) return '🍽️';
+    if (!category || typeof category !== 'string') return '🍽️';
 
     const categoryLower = category.toLowerCase();
     const emojiMap = {
@@ -2129,7 +2129,7 @@ class ReviewWriteUI {
    * 카테고리에 맞는 이모지 반환
    */
   getCategoryEmoji(category) {
-    if (!category) return '🍽️';
+    if (!category || typeof category !== 'string') return '🍽️';
 
     const categoryLower = category.toLowerCase();
     const emojiMap = {
