@@ -24,3 +24,8 @@ Thumbs.db
 # Build output
 dist/
 build/
+.vercel
+
+# Test output
+test-results/
+playwright-report/
