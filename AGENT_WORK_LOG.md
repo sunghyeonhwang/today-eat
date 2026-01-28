@@ -3,6 +3,86 @@
 이 파일은 AI 에이전트들의 작업 기록입니다. 새로운 에이전트는 작업 전 이 파일을 참고하세요.
 
 ---
+## 2026-01-28 16:30:00 - Bug Fix Engineer 🐛
+
+**티켓:** BUG-001 리뷰 작성 화면 뒤로가기 버튼 오동작
+**상태:** ✅ 해결
+**커밋:** 2616067
+
+### 작업 요약
+QA 테스트에서 발견된 리뷰 작성 화면의 뒤로가기 버튼 버그를 수정했습니다.
+
+### 버그 상세
+- **문제:** 리뷰 작성 화면에서 뒤로가기 버튼 클릭 시 리뷰 목록이 아닌 홈 화면으로 이동
+- **원인:** `client.js`의 1283번 라인에서 모든 뒤로가기 버튼이 무조건 홈 화면으로 이동하도록 하드코딩됨
+- **해결:** 현재 화면 컨텍스트를 고려하여 적절한 이전 화면으로 이동하도록 개선
+
+### 변경 사항
+
+#### client.js
+1. **`handleBackAction()` 함수 추가** (라인 663-686)
+   - 현재 화면(`currentScreen`)에 따라 분기 처리
+   - `reviewWrite` → `reviews` (리뷰 목록으로 이동)
+   - 나머지 화면들 → `home` (홈으로 이동)
+   
+2. **뒤로가기 버튼 핸들러 수정** (라인 1309)
+   - `showScreen('home')` → `handleBackAction()` 호출로 변경
+
+### 테스트 시나리오
+1. ✅ 리뷰 작성 화면 진입
+2. ✅ 뒤로가기 버튼 클릭
+3. ✅ 리뷰 목록 화면으로 정상 이동 확인
+
+### 영향 범위
+- Desktop Chrome ✅
+- Mobile Chrome ✅
+
+---
+## 2026-01-28 06:15:00 - QA Engineer 🔍
+
+**티켓:** 13. 전체 기능 QA 테스트
+**상태:** ✅ 성공
+
+
+### 작업 요약
+- I have completed the comprehensive QA testing for the "What-eat-today" (오늘 뭐먹지) application. Here's the summary:
+- - **Total Tests:** 62
+- - **Passed:** 60 (96.8%)
+- - **Failed:** 2 (3.2%)
+- - **Execution Time:** 40.8 seconds
+
+### 스크린샷
+![qa-01-home-screen.png](.agent-screenshots/qa-01-home-screen.png)
+![qa-02-restaurants-screen.png](.agent-screenshots/qa-02-restaurants-screen.png)
+![qa-03-gacha-screen.png](.agent-screenshots/qa-03-gacha-screen.png)
+![qa-04-navigation-complete.png](.agent-screenshots/qa-04-navigation-complete.png)
+![qa-05-restaurant-search.png](.agent-screenshots/qa-05-restaurant-search.png)
+![qa-06-filter-modal.png](.agent-screenshots/qa-06-filter-modal.png)
+![qa-07-gacha-initial.png](.agent-screenshots/qa-07-gacha-initial.png)
+![qa-08-gacha-result.png](.agent-screenshots/qa-08-gacha-result.png)
+![qa-09-gacha-retry.png](.agent-screenshots/qa-09-gacha-retry.png)
+![qa-10-review-list.png](.agent-screenshots/qa-10-review-list.png)
+![qa-11-review-sort-controls.png](.agent-screenshots/qa-11-review-sort-controls.png)
+![qa-12-review-sort-rating.png](.agent-screenshots/qa-12-review-sort-rating.png)
+![qa-13-review-write-screen.png](.agent-screenshots/qa-13-review-write-screen.png)
+![qa-14-review-form-elements.png](.agent-screenshots/qa-14-review-form-elements.png)
+![qa-15-review-rating-selected.png](.agent-screenshots/qa-15-review-rating-selected.png)
+![qa-16-review-tag-selected.png](.agent-screenshots/qa-16-review-tag-selected.png)
+![qa-17-review-content-filled.png](.agent-screenshots/qa-17-review-content-filled.png)
+![qa-18-filter-options.png](.agent-screenshots/qa-18-filter-options.png)
+![qa-19-mobile-viewport.png](.agent-screenshots/qa-19-mobile-viewport.png)
+![qa-20-tablet-viewport.png](.agent-screenshots/qa-20-tablet-viewport.png)
+![qa-21-visual-consistency.png](.agent-screenshots/qa-21-visual-consistency.png)
+![qa-flow-01-home.png](.agent-screenshots/qa-flow-01-home.png)
+![qa-flow-02-gacha.png](.agent-screenshots/qa-flow-02-gacha.png)
+![qa-flow-03-result.png](.agent-screenshots/qa-flow-03-result.png)
+![qa-flow-04-reviews.png](.agent-screenshots/qa-flow-04-reviews.png)
+![qa-flow-05-write-review.png](.agent-screenshots/qa-flow-05-write-review.png)
+![qa-flow-06-filled-review.png](.agent-screenshots/qa-flow-06-filled-review.png)
+![qa-flow-07-back-home.png](.agent-screenshots/qa-flow-07-back-home.png)
+
+---
+
 ## 2026-01-28 15:12:00 - QA Engineer Agent 🧪
 
 **티켓:** 13. 전체 기능 QA 테스트
