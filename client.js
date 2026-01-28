@@ -139,6 +139,12 @@ class NearbyRestaurantsUI {
     this.container = null;
     this.currentLocation = '';
     this.currentCategory = '';
+    this.currentRestaurants = []; // 현재 검색 결과 저장
+    this.selectedFilters = {
+      category: '전체',
+      distance: '500m 이내',
+      priceRange: '전체'
+    };
   }
 
   /**
@@ -289,11 +295,58 @@ class NearbyRestaurantsUI {
 
     try {
       const result = await this.locationManager.fetchNearbyRestaurants(location, category, 10);
+      this.currentRestaurants = result.restaurants; // 검색 결과 저장
       this.renderRestaurantList(result.restaurants, result.meta);
       this.showStatus(`'${result.meta.location}' 주변 음식점 ${result.restaurants.length}개를 찾았습니다.`, 'success');
     } catch (error) {
       this.showErrorState(error.message);
     }
+  }
+
+  /**
+   * 랜덤 식당 선택
+   */
+  selectRandomRestaurant() {
+    if (!this.currentRestaurants || this.currentRestaurants.length === 0) {
+      this.showStatus('검색 결과가 없습니다. 먼저 위치를 검색해 주세요.', 'error');
+      return;
+    }
+
+    const randomIndex = Math.floor(Math.random() * this.currentRestaurants.length);
+    const restaurant = this.currentRestaurants[randomIndex];
+
+    // 가챠 결과 형식으로 변환
+    const formattedRestaurant = this.formatRestaurantForDisplay(restaurant, randomIndex);
+
+    // 전역 selectedRestaurant 설정
+    selectedRestaurant = formattedRestaurant;
+
+    // 선택 확인 모달 표시
+    showSelectionConfirmation(formattedRestaurant);
+  }
+
+  /**
+   * 식당 데이터를 가챠 결과 형식으로 변환
+   */
+  formatRestaurantForDisplay(restaurant, index) {
+    const categoryStr = typeof restaurant.category === 'object' && restaurant.category !== null
+      ? (restaurant.category.sub || restaurant.category.main || '음식점')
+      : (restaurant.category || '음식점');
+    
+    return {
+      id: restaurant.id || `nearby_${index}_${Date.now()}`,
+      emoji: this.getCategoryEmoji(categoryStr),
+      name: restaurant.name || restaurant.title || '식당명',
+      category: categoryStr,
+      rating: (Math.random() * 1 + 4).toFixed(1),
+      distance: restaurant.distance || '-',
+      price: restaurant.price || '-',
+      address: restaurant.address || '',
+      telephone: restaurant.telephone || '',
+      link: restaurant.link || '',
+      mapx: restaurant.mapx,
+      mapy: restaurant.mapy
+    };
   }
 
   /**
@@ -360,8 +413,28 @@ class NearbyRestaurantsUI {
       return;
     }
 
-    const html = restaurants.map((restaurant, index) => this.createRestaurantCard(restaurant, index)).join('');
-    this.container.innerHTML = html;
+    // 랜덤 선택 버튼 추가
+    const randomButtonHtml = `
+      <div class="flex items-center justify-center mb-4">
+        <button
+          type="button"
+          id="btn-random-select"
+          class="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-br from-secondary to-secondary-dark text-white font-semibold rounded-xl hover:scale-105 active:scale-95 transition-all shadow-md hover:shadow-lg"
+        >
+          <span aria-hidden="true">🎲</span>
+          <span>랜덤으로 선택하기</span>
+        </button>
+      </div>
+    `;
+
+    const cardsHtml = restaurants.map((restaurant, index) => this.createRestaurantCard(restaurant, index)).join('');
+    this.container.innerHTML = randomButtonHtml + cardsHtml;
+
+    // 랜덤 선택 버튼 이벤트 리스너
+    const randomBtn = document.getElementById('btn-random-select');
+    if (randomBtn) {
+      randomBtn.addEventListener('click', () => this.selectRandomRestaurant());
+    }
 
     // 애니메이션 효과 (staggered)
     const cards = this.container.querySelectorAll('article');
@@ -1501,10 +1574,44 @@ function toggleFilterModal(show) {
   if (show) {
     modal.classList.remove('opacity-0', 'invisible');
     modal.querySelector('.max-w-app').classList.remove('translate-y-full');
+    // 필터 옵션 이벤트 리스너 설정
+    setupFilterOptions();
   } else {
     modal.classList.add('opacity-0', 'invisible');
     modal.querySelector('.max-w-app').classList.add('translate-y-full');
   }
+}
+
+/**
+ * 필터 옵션 이벤트 리스너 설정
+ */
+function setupFilterOptions() {
+  const modal = document.getElementById('filter-modal');
+  if (!modal) return;
+
+  // 모든 필터 버튼 찾기
+  const filterButtons = modal.querySelectorAll('button[type="button"]:not([data-action])');
+  
+  filterButtons.forEach(button => {
+    // 기존 이벤트 리스너 제거 방지
+    if (button.dataset.filterSetup) return;
+    button.dataset.filterSetup = 'true';
+
+    button.addEventListener('click', () => {
+      // 같은 그룹 내의 다른 버튼 비활성화
+      const parentDiv = button.parentElement;
+      const siblingButtons = parentDiv.querySelectorAll('button[type="button"]');
+      
+      siblingButtons.forEach(btn => {
+        btn.classList.remove('bg-primary', 'text-white');
+        btn.classList.add('bg-gray-100', 'text-gray-600');
+      });
+
+      // 현재 버튼 활성화
+      button.classList.remove('bg-gray-100', 'text-gray-600');
+      button.classList.add('bg-primary', 'text-white');
+    });
+  });
 }
 
 function updateRatingStars(rating) {
@@ -2232,6 +2339,49 @@ class ReviewWriteUI {
   }
 
   /**
+   * 식당 정보를 DB에 저장하고 ID 반환
+   */
+  async ensureRestaurantInDB(restaurant) {
+    try {
+      // 카테고리 문자열 추출
+      const categoryStr = typeof restaurant.category === 'object' && restaurant.category !== null
+        ? (restaurant.category.sub || restaurant.category.main || '음식점')
+        : (restaurant.category || '음식점');
+
+      const restaurantData = {
+        name: restaurant.name || restaurant.title || '식당명',
+        emoji: restaurant.emoji || this.getCategoryEmoji(categoryStr),
+        category: categoryStr,
+        sub_category: typeof restaurant.category === 'object' ? restaurant.category.detail : '',
+        description: restaurant.description || '',
+        address: restaurant.address || '',
+        phone: restaurant.telephone || '',
+        latitude: restaurant.coordinates?.latitude || null,
+        longitude: restaurant.coordinates?.longitude || null
+      };
+
+      const response = await fetch('/api/restaurants', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(restaurantData)
+      });
+
+      const result = await response.json();
+
+      if (!result.success) {
+        throw new Error(result.error || '식당 정보 저장 실패');
+      }
+
+      return result.data.id;
+    } catch (error) {
+      console.error('식당 저장 오류:', error);
+      throw error;
+    }
+  }
+
+  /**
    * 리뷰 제출 처리
    */
   async handleSubmit() {
@@ -2250,15 +2400,13 @@ class ReviewWriteUI {
     try {
       const content = document.getElementById('review-content')?.value.trim();
 
-      // restaurant_id 결정: 가챠 결과의 경우 임시 ID 생성 (API 식당이므로 DB에 없음)
-      // 실제로는 식당을 먼저 등록하거나, 외부 식당 정보를 저장하는 로직 필요
-      // 현재는 selectedRestaurant의 id 또는 name 기반으로 식당 식별
-      const restaurantId = selectedRestaurant.id ||
-                           selectedRestaurant.name ||
-                           'restaurant_' + Date.now();
+      // 1. 먼저 식당 정보를 DB에 저장
+      this.showNotification('식당 정보를 저장하는 중...', 'info');
+      const restaurantId = await this.ensureRestaurantInDB(selectedRestaurant);
 
+      // 2. 리뷰 데이터 생성
       const reviewData = {
-        restaurant_id: restaurantId.toString(),
+        restaurant_id: restaurantId,
         session_id: this.sessionId,
         rating: this.currentRating,
         content: content,
@@ -2266,6 +2414,8 @@ class ReviewWriteUI {
         is_public: true
       };
 
+      // 3. 리뷰 저장
+      this.showNotification('리뷰를 저장하는 중...', 'info');
       const response = await fetch('/api/reviews', {
         method: 'POST',
         headers: {
