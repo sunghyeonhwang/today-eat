@@ -9,24 +9,65 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: {
+              DEFAULT: '#FF6B35',
+              light: '#FF8C5A',
+              dark: '#E55A2B'
+            },
+            secondary: {
+              DEFAULT: '#4ECDC4',
+              light: '#7EDDD6',
+              dark: '#3DBDB5'
+            },
+            accent: {
+              DEFAULT: '#FFE66D',
+              light: '#FFF09D',
+              dark: '#E6CF5A'
+            },
+            bg: {
+              primary: '#FFFBF7',
+              secondary: '#FFF5ED',
+              card: '#FFFFFF'
+            }
+          },
+          fontFamily: {
+            sans: ['Noto Sans KR', '-apple-system', 'BlinkMacSystemFont', 'sans-serif']
+          },
+          maxWidth: {
+            'app': '480px'
+          },
+          animation: {
+            'bounce-slow': 'bounce 2s ease-in-out infinite'
+          }
+        }
+      }
+    }
+  </script>
 </head>
-<body>
-  <div class="app">
+<body class="font-sans text-gray-800 bg-bg-primary min-h-screen antialiased">
+  <div class="flex flex-col min-h-screen max-w-app mx-auto bg-bg-primary shadow-xl">
     <!-- ==========================================
          Header
          ========================================== -->
-    <header class="app__header">
-      <div class="header">
-        <div class="header__logo">
-          <div class="header__logo-icon" aria-hidden="true">🍽️</div>
-          <span class="header__logo-text">오늘 뭐먹지</span>
+    <header class="sticky top-0 z-50 bg-white border-b border-gray-200">
+      <div class="flex items-center justify-between px-4 h-14">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-xl" aria-hidden="true">
+            🍽️
+          </div>
+          <span class="text-lg font-bold text-gray-900">오늘 뭐먹지</span>
         </div>
-        <div class="header__actions">
-          <button class="header__btn" type="button" aria-label="알림">
+        <div class="flex items-center gap-2">
+          <button class="w-10 h-10 rounded-full flex items-center justify-center text-gray-600 hover:bg-gray-100 transition-colors" type="button" aria-label="알림">
             🔔
           </button>
-          <button class="header__btn" type="button" aria-label="설정">
+          <button class="w-10 h-10 rounded-full flex items-center justify-center text-gray-600 hover:bg-gray-100 transition-colors" type="button" aria-label="설정">
             ⚙️
           </button>
         </div>
@@ -36,67 +77,67 @@
     <!-- ==========================================
          Main Content
          ========================================== -->
-    <main class="app__main">
+    <main class="flex-1 p-4 pb-24">
       <!-- ==========================================
            Screen 1: Main (Home) Screen
            ========================================== -->
-      <section id="screen-home" class="screen screen--active" aria-labelledby="home-title">
+      <section id="screen-home" class="screen" aria-labelledby="home-title">
         <!-- Hero Section -->
-        <div class="hero">
-          <div class="hero__emoji" aria-hidden="true">🤔</div>
-          <h1 id="home-title" class="hero__title">오늘 뭐 먹지?</h1>
-          <p class="hero__subtitle">맛있는 한 끼를 위한 선택을 도와드릴게요</p>
+        <div class="text-center py-12 px-4">
+          <div class="text-6xl mb-4 animate-bounce-slow" aria-hidden="true">🤔</div>
+          <h1 id="home-title" class="text-2xl font-bold text-gray-900 mb-2">오늘 뭐 먹지?</h1>
+          <p class="text-base text-gray-500">맛있는 한 끼를 위한 선택을 도와드릴게요</p>
         </div>
 
         <!-- Action Buttons -->
-        <div class="actions">
-          <button class="action-btn action-btn--primary" type="button" aria-describedby="nearby-desc">
-            <span class="action-btn__icon" aria-hidden="true">📍</span>
-            <span class="action-btn__content">
-              <span class="action-btn__title">주변 맛집 찾기</span>
-              <span id="nearby-desc" class="action-btn__desc">내 위치 기반으로 맛집을 검색해요</span>
+        <div class="flex flex-col gap-4 px-4 mb-8">
+          <button class="flex items-center gap-4 p-6 rounded-2xl bg-gradient-to-br from-primary to-primary-dark text-white shadow-lg hover:-translate-y-0.5 hover:shadow-xl transition-all text-left" type="button" data-action="nearby" aria-describedby="nearby-desc">
+            <span class="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center text-2xl flex-shrink-0" aria-hidden="true">📍</span>
+            <span class="flex-1">
+              <span class="block text-lg font-bold mb-1">주변 맛집 찾기</span>
+              <span id="nearby-desc" class="block text-sm opacity-90">내 위치 기반으로 맛집을 검색해요</span>
             </span>
-            <span class="action-btn__arrow" aria-hidden="true">→</span>
+            <span class="text-xl opacity-70" aria-hidden="true">→</span>
           </button>
 
-          <button class="action-btn action-btn--secondary" type="button" aria-describedby="random-desc">
-            <span class="action-btn__icon" aria-hidden="true">🎰</span>
-            <span class="action-btn__content">
-              <span class="action-btn__title">랜덤으로 정하기</span>
-              <span id="random-desc" class="action-btn__desc">오늘의 메뉴를 랜덤으로 추천받아요</span>
+          <button class="flex items-center gap-4 p-6 rounded-2xl bg-gradient-to-br from-secondary to-secondary-dark text-white shadow-lg hover:-translate-y-0.5 hover:shadow-xl transition-all text-left" type="button" data-action="random" aria-describedby="random-desc">
+            <span class="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center text-2xl flex-shrink-0" aria-hidden="true">🎰</span>
+            <span class="flex-1">
+              <span class="block text-lg font-bold mb-1">랜덤으로 정하기</span>
+              <span id="random-desc" class="block text-sm opacity-90">오늘의 메뉴를 랜덤으로 추천받아요</span>
             </span>
-            <span class="action-btn__arrow" aria-hidden="true">→</span>
+            <span class="text-xl opacity-70" aria-hidden="true">→</span>
           </button>
         </div>
 
         <!-- Recent Reviews Section -->
-        <section class="section" aria-labelledby="recent-reviews-title">
-          <div class="section__header">
-            <h2 id="recent-reviews-title" class="section__title">최근 리뷰</h2>
-            <a href="#screen-reviews" class="section__link">전체보기</a>
+        <section class="mb-8" aria-labelledby="recent-reviews-title">
+          <div class="flex items-center justify-between mb-4 px-4">
+            <h2 id="recent-reviews-title" class="text-lg font-bold text-gray-900">최근 리뷰</h2>
+            <a href="#screen-reviews" class="text-sm text-primary font-medium" data-nav="reviews">전체보기</a>
           </div>
 
-          <div class="restaurant-list">
+          <div class="flex flex-col gap-4 px-4">
             <!-- Restaurant Card 1 -->
-            <article class="restaurant-card">
-              <div class="restaurant-card__image restaurant-card__image--placeholder">
+            <article class="flex gap-4 p-4 bg-white rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
+              <div class="w-20 h-20 bg-bg-secondary rounded-xl flex items-center justify-center text-2xl flex-shrink-0">
                 <span aria-hidden="true">🍜</span>
               </div>
-              <div class="restaurant-card__content">
-                <div class="restaurant-card__header">
-                  <h3 class="restaurant-card__name">맛있는 국수집</h3>
-                  <div class="restaurant-card__rating">
+              <div class="flex-1 min-w-0">
+                <div class="flex items-start justify-between mb-1">
+                  <h3 class="text-base font-semibold text-gray-900 truncate">맛있는 국수집</h3>
+                  <div class="flex items-center gap-1 text-sm text-amber-500 flex-shrink-0">
                     <span aria-hidden="true">⭐</span>
                     <span>4.5</span>
                   </div>
                 </div>
-                <p class="restaurant-card__category">한식 · 국수</p>
-                <div class="restaurant-card__meta">
-                  <span class="restaurant-card__meta-item">
+                <p class="text-sm text-gray-500 mb-2">한식 · 국수</p>
+                <div class="flex items-center gap-4 text-xs text-gray-400">
+                  <span class="flex items-center gap-1">
                     <span aria-hidden="true">📍</span>
                     <span>350m</span>
                   </span>
-                  <span class="restaurant-card__meta-item">
+                  <span class="flex items-center gap-1">
                     <span aria-hidden="true">💰</span>
                     <span>8,000원</span>
                   </span>
@@ -105,25 +146,25 @@
             </article>
 
             <!-- Restaurant Card 2 -->
-            <article class="restaurant-card">
-              <div class="restaurant-card__image restaurant-card__image--placeholder">
+            <article class="flex gap-4 p-4 bg-white rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
+              <div class="w-20 h-20 bg-bg-secondary rounded-xl flex items-center justify-center text-2xl flex-shrink-0">
                 <span aria-hidden="true">🍕</span>
               </div>
-              <div class="restaurant-card__content">
-                <div class="restaurant-card__header">
-                  <h3 class="restaurant-card__name">피자파티</h3>
-                  <div class="restaurant-card__rating">
+              <div class="flex-1 min-w-0">
+                <div class="flex items-start justify-between mb-1">
+                  <h3 class="text-base font-semibold text-gray-900 truncate">피자파티</h3>
+                  <div class="flex items-center gap-1 text-sm text-amber-500 flex-shrink-0">
                     <span aria-hidden="true">⭐</span>
                     <span>4.8</span>
                   </div>
                 </div>
-                <p class="restaurant-card__category">양식 · 피자</p>
-                <div class="restaurant-card__meta">
-                  <span class="restaurant-card__meta-item">
+                <p class="text-sm text-gray-500 mb-2">양식 · 피자</p>
+                <div class="flex items-center gap-4 text-xs text-gray-400">
+                  <span class="flex items-center gap-1">
                     <span aria-hidden="true">📍</span>
                     <span>500m</span>
                   </span>
-                  <span class="restaurant-card__meta-item">
+                  <span class="flex items-center gap-1">
                     <span aria-hidden="true">💰</span>
                     <span>15,000원</span>
                   </span>
@@ -137,38 +178,38 @@
       <!-- ==========================================
            Screen 2: Restaurant List Screen
            ========================================== -->
-      <section id="screen-restaurants" class="screen" aria-labelledby="restaurants-title" hidden>
-        <div class="page-header">
-          <button class="page-header__back" type="button" aria-label="뒤로 가기">
+      <section id="screen-restaurants" class="screen hidden" aria-labelledby="restaurants-title">
+        <div class="flex items-center gap-4 p-4 bg-white border-b border-gray-200 -mx-4 -mt-4 mb-4">
+          <button class="w-10 h-10 rounded-full flex items-center justify-center text-gray-700 hover:bg-gray-100 transition-colors" type="button" data-action="back" aria-label="뒤로 가기">
             ←
           </button>
-          <h1 id="restaurants-title" class="page-header__title">주변 맛집</h1>
-          <button class="page-header__action" type="button">
+          <h1 id="restaurants-title" class="flex-1 text-lg font-bold text-gray-900">주변 맛집</h1>
+          <button class="text-base font-semibold text-primary" type="button" data-action="filter">
             필터
           </button>
         </div>
 
-        <div class="restaurant-list" style="padding: var(--spacing-md);">
+        <div class="flex flex-col gap-4">
           <!-- Restaurant Card 1 -->
-          <article class="restaurant-card">
-            <div class="restaurant-card__image restaurant-card__image--placeholder">
+          <article class="flex gap-4 p-4 bg-white rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
+            <div class="w-20 h-20 bg-bg-secondary rounded-xl flex items-center justify-center text-2xl flex-shrink-0">
               <span aria-hidden="true">🍛</span>
             </div>
-            <div class="restaurant-card__content">
-              <div class="restaurant-card__header">
-                <h3 class="restaurant-card__name">황금카레</h3>
-                <div class="restaurant-card__rating">
+            <div class="flex-1 min-w-0">
+              <div class="flex items-start justify-between mb-1">
+                <h3 class="text-base font-semibold text-gray-900 truncate">황금카레</h3>
+                <div class="flex items-center gap-1 text-sm text-amber-500 flex-shrink-0">
                   <span aria-hidden="true">⭐</span>
                   <span>4.7</span>
                 </div>
               </div>
-              <p class="restaurant-card__category">일식 · 카레</p>
-              <div class="restaurant-card__meta">
-                <span class="restaurant-card__meta-item">
+              <p class="text-sm text-gray-500 mb-2">일식 · 카레</p>
+              <div class="flex items-center gap-4 text-xs text-gray-400">
+                <span class="flex items-center gap-1">
                   <span aria-hidden="true">📍</span>
                   <span>120m</span>
                 </span>
-                <span class="restaurant-card__meta-item">
+                <span class="flex items-center gap-1">
                   <span aria-hidden="true">💰</span>
                   <span>9,000원</span>
                 </span>
@@ -177,25 +218,25 @@
           </article>
 
           <!-- Restaurant Card 2 -->
-          <article class="restaurant-card">
-            <div class="restaurant-card__image restaurant-card__image--placeholder">
+          <article class="flex gap-4 p-4 bg-white rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
+            <div class="w-20 h-20 bg-bg-secondary rounded-xl flex items-center justify-center text-2xl flex-shrink-0">
               <span aria-hidden="true">🍜</span>
             </div>
-            <div class="restaurant-card__content">
-              <div class="restaurant-card__header">
-                <h3 class="restaurant-card__name">맛있는 국수집</h3>
-                <div class="restaurant-card__rating">
+            <div class="flex-1 min-w-0">
+              <div class="flex items-start justify-between mb-1">
+                <h3 class="text-base font-semibold text-gray-900 truncate">맛있는 국수집</h3>
+                <div class="flex items-center gap-1 text-sm text-amber-500 flex-shrink-0">
                   <span aria-hidden="true">⭐</span>
                   <span>4.5</span>
                 </div>
               </div>
-              <p class="restaurant-card__category">한식 · 국수</p>
-              <div class="restaurant-card__meta">
-                <span class="restaurant-card__meta-item">
+              <p class="text-sm text-gray-500 mb-2">한식 · 국수</p>
+              <div class="flex items-center gap-4 text-xs text-gray-400">
+                <span class="flex items-center gap-1">
                   <span aria-hidden="true">📍</span>
                   <span>350m</span>
                 </span>
-                <span class="restaurant-card__meta-item">
+                <span class="flex items-center gap-1">
                   <span aria-hidden="true">💰</span>
                   <span>8,000원</span>
                 </span>
@@ -204,25 +245,25 @@
           </article>
 
           <!-- Restaurant Card 3 -->
-          <article class="restaurant-card">
-            <div class="restaurant-card__image restaurant-card__image--placeholder">
+          <article class="flex gap-4 p-4 bg-white rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
+            <div class="w-20 h-20 bg-bg-secondary rounded-xl flex items-center justify-center text-2xl flex-shrink-0">
               <span aria-hidden="true">🍕</span>
             </div>
-            <div class="restaurant-card__content">
-              <div class="restaurant-card__header">
-                <h3 class="restaurant-card__name">피자파티</h3>
-                <div class="restaurant-card__rating">
+            <div class="flex-1 min-w-0">
+              <div class="flex items-start justify-between mb-1">
+                <h3 class="text-base font-semibold text-gray-900 truncate">피자파티</h3>
+                <div class="flex items-center gap-1 text-sm text-amber-500 flex-shrink-0">
                   <span aria-hidden="true">⭐</span>
                   <span>4.8</span>
                 </div>
               </div>
-              <p class="restaurant-card__category">양식 · 피자</p>
-              <div class="restaurant-card__meta">
-                <span class="restaurant-card__meta-item">
+              <p class="text-sm text-gray-500 mb-2">양식 · 피자</p>
+              <div class="flex items-center gap-4 text-xs text-gray-400">
+                <span class="flex items-center gap-1">
                   <span aria-hidden="true">📍</span>
                   <span>500m</span>
                 </span>
-                <span class="restaurant-card__meta-item">
+                <span class="flex items-center gap-1">
                   <span aria-hidden="true">💰</span>
                   <span>15,000원</span>
                 </span>
@@ -231,25 +272,25 @@
           </article>
 
           <!-- Restaurant Card 4 -->
-          <article class="restaurant-card">
-            <div class="restaurant-card__image restaurant-card__image--placeholder">
+          <article class="flex gap-4 p-4 bg-white rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
+            <div class="w-20 h-20 bg-bg-secondary rounded-xl flex items-center justify-center text-2xl flex-shrink-0">
               <span aria-hidden="true">🍔</span>
             </div>
-            <div class="restaurant-card__content">
-              <div class="restaurant-card__header">
-                <h3 class="restaurant-card__name">버거하우스</h3>
-                <div class="restaurant-card__rating">
+            <div class="flex-1 min-w-0">
+              <div class="flex items-start justify-between mb-1">
+                <h3 class="text-base font-semibold text-gray-900 truncate">버거하우스</h3>
+                <div class="flex items-center gap-1 text-sm text-amber-500 flex-shrink-0">
                   <span aria-hidden="true">⭐</span>
                   <span>4.3</span>
                 </div>
               </div>
-              <p class="restaurant-card__category">양식 · 버거</p>
-              <div class="restaurant-card__meta">
-                <span class="restaurant-card__meta-item">
+              <p class="text-sm text-gray-500 mb-2">양식 · 버거</p>
+              <div class="flex items-center gap-4 text-xs text-gray-400">
+                <span class="flex items-center gap-1">
                   <span aria-hidden="true">📍</span>
                   <span>650m</span>
                 </span>
-                <span class="restaurant-card__meta-item">
+                <span class="flex items-center gap-1">
                   <span aria-hidden="true">💰</span>
                   <span>12,000원</span>
                 </span>
@@ -258,25 +299,25 @@
           </article>
 
           <!-- Restaurant Card 5 -->
-          <article class="restaurant-card">
-            <div class="restaurant-card__image restaurant-card__image--placeholder">
+          <article class="flex gap-4 p-4 bg-white rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
+            <div class="w-20 h-20 bg-bg-secondary rounded-xl flex items-center justify-center text-2xl flex-shrink-0">
               <span aria-hidden="true">🍣</span>
             </div>
-            <div class="restaurant-card__content">
-              <div class="restaurant-card__header">
-                <h3 class="restaurant-card__name">스시도쿄</h3>
-                <div class="restaurant-card__rating">
+            <div class="flex-1 min-w-0">
+              <div class="flex items-start justify-between mb-1">
+                <h3 class="text-base font-semibold text-gray-900 truncate">스시도쿄</h3>
+                <div class="flex items-center gap-1 text-sm text-amber-500 flex-shrink-0">
                   <span aria-hidden="true">⭐</span>
                   <span>4.9</span>
                 </div>
               </div>
-              <p class="restaurant-card__category">일식 · 초밥</p>
-              <div class="restaurant-card__meta">
-                <span class="restaurant-card__meta-item">
+              <p class="text-sm text-gray-500 mb-2">일식 · 초밥</p>
+              <div class="flex items-center gap-4 text-xs text-gray-400">
+                <span class="flex items-center gap-1">
                   <span aria-hidden="true">📍</span>
                   <span>800m</span>
                 </span>
-                <span class="restaurant-card__meta-item">
+                <span class="flex items-center gap-1">
                   <span aria-hidden="true">💰</span>
                   <span>25,000원</span>
                 </span>
@@ -289,15 +330,15 @@
       <!-- ==========================================
            Screen 3: Gacha (Random) Screen
            ========================================== -->
-      <section id="screen-gacha" class="screen" aria-labelledby="gacha-title" hidden>
-        <!-- Initial State -->
-        <div class="gacha">
-          <div class="gacha__slot">
-            <span class="gacha__emoji" aria-hidden="true">🎲</span>
+      <section id="screen-gacha" class="screen hidden" aria-labelledby="gacha-title">
+        <div class="flex flex-col items-center justify-center min-h-[calc(100vh-180px)] px-8 text-center">
+          <div class="w-48 h-48 bg-gradient-to-br from-accent-light to-accent rounded-3xl flex items-center justify-center mb-8 shadow-xl relative overflow-hidden">
+            <div class="absolute inset-1 border-[3px] border-dashed border-primary/30 rounded-[20px]"></div>
+            <span class="text-7xl" aria-hidden="true">🎲</span>
           </div>
-          <h1 id="gacha-title" class="gacha__title">오늘의 메뉴는?</h1>
-          <p class="gacha__subtitle">버튼을 누르면 랜덤으로 메뉴를 추천해 드려요!</p>
-          <button class="gacha__btn" type="button">
+          <h1 id="gacha-title" class="text-2xl font-bold text-gray-900 mb-2">오늘의 메뉴는?</h1>
+          <p class="text-base text-gray-500 mb-8">버튼을 누르면 랜덤으로 메뉴를 추천해 드려요!</p>
+          <button class="flex items-center justify-center gap-2 px-12 py-4 bg-gradient-to-br from-primary to-primary-dark text-white text-lg font-bold rounded-full shadow-lg hover:scale-105 hover:shadow-xl active:scale-[0.98] transition-all" type="button" data-action="gacha">
             <span aria-hidden="true">🎰</span>
             <span>뽑기!</span>
           </button>
@@ -307,40 +348,40 @@
       <!-- ==========================================
            Screen 4: Gacha Result Screen
            ========================================== -->
-      <section id="screen-gacha-result" class="screen" aria-labelledby="result-title" hidden>
-        <div class="gacha-result">
-          <span class="gacha-result__badge">
+      <section id="screen-gacha-result" class="screen hidden" aria-labelledby="result-title">
+        <div class="flex flex-col items-center px-8 py-8 text-center">
+          <span class="inline-flex items-center gap-1 px-4 py-1 bg-accent text-gray-800 text-sm font-semibold rounded-full mb-6">
             <span aria-hidden="true">🎉</span>
             <span>오늘의 메뉴</span>
           </span>
 
-          <div class="gacha-result__image restaurant-card__image--placeholder" style="width: 160px; height: 160px; border-radius: var(--radius-2xl); display: flex; align-items: center; justify-content: center; font-size: 64px; background-color: var(--color-bg-secondary);">
+          <div class="w-40 h-40 bg-bg-secondary rounded-3xl flex items-center justify-center text-6xl mb-6">
             <span aria-hidden="true">🍛</span>
           </div>
 
-          <h1 id="result-title" class="gacha-result__name">황금카레</h1>
-          <p class="gacha-result__category">일식 · 카레</p>
+          <h1 id="result-title" class="text-2xl font-bold text-gray-900 mb-1">황금카레</h1>
+          <p class="text-base text-gray-500 mb-4">일식 · 카레</p>
 
-          <div class="gacha-result__info">
-            <span class="gacha-result__info-item">
+          <div class="flex items-center justify-center gap-6 mb-8">
+            <span class="flex items-center gap-1 text-sm text-gray-600">
               <span aria-hidden="true">⭐</span>
               <span>4.7</span>
             </span>
-            <span class="gacha-result__info-item">
+            <span class="flex items-center gap-1 text-sm text-gray-600">
               <span aria-hidden="true">📍</span>
               <span>120m</span>
             </span>
-            <span class="gacha-result__info-item">
+            <span class="flex items-center gap-1 text-sm text-gray-600">
               <span aria-hidden="true">💰</span>
               <span>9,000원</span>
             </span>
           </div>
 
-          <div class="gacha-result__actions">
-            <button class="gacha-result__btn gacha-result__btn--outline" type="button">
+          <div class="flex gap-4 w-full max-w-xs">
+            <button class="flex-1 py-4 border-2 border-gray-300 text-gray-700 rounded-xl text-base font-semibold hover:border-gray-400 hover:bg-gray-50 transition-all" type="button" data-action="retry">
               다시 뽑기
             </button>
-            <button class="gacha-result__btn gacha-result__btn--primary" type="button">
+            <button class="flex-1 py-4 bg-primary text-white rounded-xl text-base font-semibold hover:bg-primary-dark transition-colors" type="button" data-action="select">
               여기로 갈래요!
             </button>
           </div>
@@ -350,84 +391,84 @@
       <!-- ==========================================
            Screen 5: Review Write Screen
            ========================================== -->
-      <section id="screen-review-write" class="screen" aria-labelledby="review-write-title" hidden>
-        <div class="page-header">
-          <button class="page-header__back" type="button" aria-label="뒤로 가기">
+      <section id="screen-review-write" class="screen hidden" aria-labelledby="review-write-title">
+        <div class="flex items-center gap-4 p-4 bg-white border-b border-gray-200 -mx-4 -mt-4 mb-4">
+          <button class="w-10 h-10 rounded-full flex items-center justify-center text-gray-700 hover:bg-gray-100 transition-colors" type="button" data-action="back" aria-label="뒤로 가기">
             ←
           </button>
-          <h1 id="review-write-title" class="page-header__title">리뷰 작성</h1>
-          <button class="page-header__action" type="button">
+          <h1 id="review-write-title" class="flex-1 text-lg font-bold text-gray-900">리뷰 작성</h1>
+          <button class="text-base font-semibold text-primary" type="button" data-action="save">
             저장
           </button>
         </div>
 
-        <form class="review-form">
+        <form class="space-y-6" data-form="review">
           <!-- Restaurant Info -->
-          <div class="review-form__section">
-            <label class="review-form__label">식당</label>
-            <div class="review-form__restaurant">
-              <div class="review-form__restaurant-image restaurant-card__image--placeholder" style="display: flex; align-items: center; justify-content: center; font-size: var(--text-xl); background-color: var(--color-gray-200);">
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-2">식당</label>
+            <div class="flex items-center gap-4 p-4 bg-bg-secondary rounded-xl">
+              <div class="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center text-xl">
                 <span aria-hidden="true">🍛</span>
               </div>
               <div>
-                <p class="review-form__restaurant-name">황금카레</p>
-                <p class="review-form__restaurant-category">일식 · 카레</p>
+                <p class="text-base font-semibold text-gray-900">황금카레</p>
+                <p class="text-sm text-gray-500">일식 · 카레</p>
               </div>
             </div>
           </div>
 
           <!-- Rating -->
-          <div class="review-form__section">
-            <label class="review-form__label" id="rating-label">별점</label>
-            <div class="rating-input" role="radiogroup" aria-labelledby="rating-label">
-              <button class="rating-input__star rating-input__star--active" type="button" aria-label="1점">⭐</button>
-              <button class="rating-input__star rating-input__star--active" type="button" aria-label="2점">⭐</button>
-              <button class="rating-input__star rating-input__star--active" type="button" aria-label="3점">⭐</button>
-              <button class="rating-input__star rating-input__star--active" type="button" aria-label="4점">⭐</button>
-              <button class="rating-input__star" type="button" aria-label="5점">⭐</button>
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-2" id="rating-label">별점</label>
+            <div class="flex gap-2" role="radiogroup" aria-labelledby="rating-label">
+              <button class="text-3xl text-amber-400 transition-colors" type="button" data-rating="1" aria-label="1점">⭐</button>
+              <button class="text-3xl text-amber-400 transition-colors" type="button" data-rating="2" aria-label="2점">⭐</button>
+              <button class="text-3xl text-amber-400 transition-colors" type="button" data-rating="3" aria-label="3점">⭐</button>
+              <button class="text-3xl text-amber-400 transition-colors" type="button" data-rating="4" aria-label="4점">⭐</button>
+              <button class="text-3xl text-gray-300 hover:text-amber-400 transition-colors" type="button" data-rating="5" aria-label="5점">⭐</button>
             </div>
           </div>
 
           <!-- Review Content -->
-          <div class="review-form__section">
-            <label class="review-form__label" for="review-content">리뷰 내용</label>
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-2" for="review-content">리뷰 내용</label>
             <textarea
               id="review-content"
-              class="input textarea"
+              class="w-full p-4 border-2 border-gray-200 rounded-xl text-base text-gray-800 bg-white focus:outline-none focus:border-primary transition-colors placeholder:text-gray-400 resize-y min-h-[120px]"
               placeholder="음식, 서비스, 분위기 등에 대한 솔직한 리뷰를 작성해 주세요."
               rows="5"
             ></textarea>
           </div>
 
           <!-- Photos -->
-          <div class="review-form__section">
-            <label class="review-form__label">사진 첨부</label>
-            <div class="photo-upload">
-              <button class="photo-upload__add" type="button" aria-label="사진 추가">
-                <span class="photo-upload__add-icon" aria-hidden="true">+</span>
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-2">사진 첨부</label>
+            <div class="flex gap-2 flex-wrap">
+              <button class="w-20 h-20 border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center gap-1 text-gray-400 text-xs hover:border-primary hover:text-primary transition-colors" type="button" data-action="add-photo" aria-label="사진 추가">
+                <span class="text-xl" aria-hidden="true">+</span>
                 <span>사진 추가</span>
               </button>
             </div>
           </div>
 
           <!-- Tags -->
-          <div class="review-form__section">
-            <label class="review-form__label">태그 선택</label>
-            <div class="tags" role="group" aria-label="리뷰 태그">
-              <button class="tag tag--selected" type="button">👍 맛있어요</button>
-              <button class="tag" type="button">💰 가성비 좋아요</button>
-              <button class="tag" type="button">🍽️ 양이 많아요</button>
-              <button class="tag" type="button">😊 친절해요</button>
-              <button class="tag" type="button">🪑 분위기 좋아요</button>
-              <button class="tag" type="button">🅿️ 주차 편해요</button>
-              <button class="tag" type="button">⏱️ 빨라요</button>
-              <button class="tag" type="button">🌱 건강해요</button>
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-2">태그 선택</label>
+            <div class="flex flex-wrap gap-2" role="group" aria-label="리뷰 태그">
+              <button class="inline-flex items-center px-4 py-2 bg-primary text-white rounded-full text-sm transition-colors" type="button" data-tag="tasty">👍 맛있어요</button>
+              <button class="inline-flex items-center px-4 py-2 bg-gray-100 text-gray-600 rounded-full text-sm hover:bg-gray-200 transition-colors" type="button" data-tag="value">💰 가성비 좋아요</button>
+              <button class="inline-flex items-center px-4 py-2 bg-gray-100 text-gray-600 rounded-full text-sm hover:bg-gray-200 transition-colors" type="button" data-tag="portion">🍽️ 양이 많아요</button>
+              <button class="inline-flex items-center px-4 py-2 bg-gray-100 text-gray-600 rounded-full text-sm hover:bg-gray-200 transition-colors" type="button" data-tag="kind">😊 친절해요</button>
+              <button class="inline-flex items-center px-4 py-2 bg-gray-100 text-gray-600 rounded-full text-sm hover:bg-gray-200 transition-colors" type="button" data-tag="ambiance">🪑 분위기 좋아요</button>
+              <button class="inline-flex items-center px-4 py-2 bg-gray-100 text-gray-600 rounded-full text-sm hover:bg-gray-200 transition-colors" type="button" data-tag="parking">🅿️ 주차 편해요</button>
+              <button class="inline-flex items-center px-4 py-2 bg-gray-100 text-gray-600 rounded-full text-sm hover:bg-gray-200 transition-colors" type="button" data-tag="fast">⏱️ 빨라요</button>
+              <button class="inline-flex items-center px-4 py-2 bg-gray-100 text-gray-600 rounded-full text-sm hover:bg-gray-200 transition-colors" type="button" data-tag="healthy">🌱 건강해요</button>
             </div>
           </div>
 
           <!-- Submit Button -->
-          <div class="review-form__section">
-            <button class="submit-btn" type="submit">
+          <div>
+            <button class="w-full py-4 bg-primary text-white text-lg font-bold rounded-xl hover:bg-primary-dark disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors" type="submit">
               리뷰 저장하기
             </button>
           </div>
@@ -437,86 +478,86 @@
       <!-- ==========================================
            Screen 6: Review List Screen
            ========================================== -->
-      <section id="screen-reviews" class="screen" aria-labelledby="reviews-title" hidden>
-        <div class="page-header">
-          <button class="page-header__back" type="button" aria-label="뒤로 가기">
+      <section id="screen-reviews" class="screen hidden" aria-labelledby="reviews-title">
+        <div class="flex items-center gap-4 p-4 bg-white border-b border-gray-200 -mx-4 -mt-4 mb-4">
+          <button class="w-10 h-10 rounded-full flex items-center justify-center text-gray-700 hover:bg-gray-100 transition-colors" type="button" data-action="back" aria-label="뒤로 가기">
             ←
           </button>
-          <h1 id="reviews-title" class="page-header__title">내 리뷰</h1>
-          <button class="page-header__action" type="button">
+          <h1 id="reviews-title" class="flex-1 text-lg font-bold text-gray-900">내 리뷰</h1>
+          <button class="text-base font-semibold text-primary" type="button" data-action="write">
             + 작성
           </button>
         </div>
 
-        <div class="review-list" style="padding: var(--spacing-md);">
+        <div class="flex flex-col gap-4">
           <!-- Review Card 1 -->
-          <article class="review-card">
-            <div class="review-card__header">
-              <div class="review-card__restaurant-image restaurant-card__image--placeholder" style="display: flex; align-items: center; justify-content: center; font-size: var(--text-xl); background-color: var(--color-gray-200);">
+          <article class="p-4 bg-white rounded-2xl shadow-sm">
+            <div class="flex items-center gap-4 mb-4">
+              <div class="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center text-xl">
                 <span aria-hidden="true">🍛</span>
               </div>
-              <div class="review-card__restaurant-info">
-                <p class="review-card__restaurant-name">황금카레</p>
-                <p class="review-card__date">2025년 1월 25일</p>
+              <div class="flex-1">
+                <p class="text-base font-semibold text-gray-900">황금카레</p>
+                <p class="text-xs text-gray-400">2025년 1월 25일</p>
               </div>
-              <div class="review-card__rating">
+              <div class="flex gap-0.5 text-sm text-amber-500">
                 <span>⭐⭐⭐⭐⭐</span>
               </div>
             </div>
-            <p class="review-card__content">
+            <p class="text-sm text-gray-600 leading-relaxed mb-4">
               카레가 정말 진하고 맛있어요! 돈까스도 바삭바삭하고 양도 푸짐합니다. 점심시간에 갔는데 사람이 많아서 좀 기다렸지만 그만한 가치가 있었어요. 다음에 또 방문할 예정입니다.
             </p>
-            <div class="review-card__tags">
-              <span class="review-card__tag">👍 맛있어요</span>
-              <span class="review-card__tag">🍽️ 양이 많아요</span>
-              <span class="review-card__tag">💰 가성비 좋아요</span>
+            <div class="flex flex-wrap gap-1">
+              <span class="px-2 py-1 bg-bg-secondary rounded text-xs text-gray-600">👍 맛있어요</span>
+              <span class="px-2 py-1 bg-bg-secondary rounded text-xs text-gray-600">🍽️ 양이 많아요</span>
+              <span class="px-2 py-1 bg-bg-secondary rounded text-xs text-gray-600">💰 가성비 좋아요</span>
             </div>
           </article>
 
           <!-- Review Card 2 -->
-          <article class="review-card">
-            <div class="review-card__header">
-              <div class="review-card__restaurant-image restaurant-card__image--placeholder" style="display: flex; align-items: center; justify-content: center; font-size: var(--text-xl); background-color: var(--color-gray-200);">
+          <article class="p-4 bg-white rounded-2xl shadow-sm">
+            <div class="flex items-center gap-4 mb-4">
+              <div class="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center text-xl">
                 <span aria-hidden="true">🍕</span>
               </div>
-              <div class="review-card__restaurant-info">
-                <p class="review-card__restaurant-name">피자파티</p>
-                <p class="review-card__date">2025년 1월 20일</p>
+              <div class="flex-1">
+                <p class="text-base font-semibold text-gray-900">피자파티</p>
+                <p class="text-xs text-gray-400">2025년 1월 20일</p>
               </div>
-              <div class="review-card__rating">
+              <div class="flex gap-0.5 text-sm text-amber-500">
                 <span>⭐⭐⭐⭐</span>
               </div>
             </div>
-            <p class="review-card__content">
+            <p class="text-sm text-gray-600 leading-relaxed mb-4">
               치즈가 정말 늘어나는 피자! 토핑도 풍성하고 도우도 쫄깃해요. 사이드로 시킨 감자튀김도 맛있었습니다. 배달도 되니까 편하게 시켜먹기 좋아요.
             </p>
-            <div class="review-card__tags">
-              <span class="review-card__tag">👍 맛있어요</span>
-              <span class="review-card__tag">😊 친절해요</span>
+            <div class="flex flex-wrap gap-1">
+              <span class="px-2 py-1 bg-bg-secondary rounded text-xs text-gray-600">👍 맛있어요</span>
+              <span class="px-2 py-1 bg-bg-secondary rounded text-xs text-gray-600">😊 친절해요</span>
             </div>
           </article>
 
           <!-- Review Card 3 -->
-          <article class="review-card">
-            <div class="review-card__header">
-              <div class="review-card__restaurant-image restaurant-card__image--placeholder" style="display: flex; align-items: center; justify-content: center; font-size: var(--text-xl); background-color: var(--color-gray-200);">
+          <article class="p-4 bg-white rounded-2xl shadow-sm">
+            <div class="flex items-center gap-4 mb-4">
+              <div class="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center text-xl">
                 <span aria-hidden="true">🍜</span>
               </div>
-              <div class="review-card__restaurant-info">
-                <p class="review-card__restaurant-name">맛있는 국수집</p>
-                <p class="review-card__date">2025년 1월 15일</p>
+              <div class="flex-1">
+                <p class="text-base font-semibold text-gray-900">맛있는 국수집</p>
+                <p class="text-xs text-gray-400">2025년 1월 15일</p>
               </div>
-              <div class="review-card__rating">
+              <div class="flex gap-0.5 text-sm text-amber-500">
                 <span>⭐⭐⭐⭐⭐</span>
               </div>
             </div>
-            <p class="review-card__content">
+            <p class="text-sm text-gray-600 leading-relaxed mb-4">
               여름에 딱 좋은 시원한 냉면! 육수가 깔끔하고 면도 쫄깃해요. 양도 많아서 배부르게 먹었습니다. 물냉면, 비빔냉면 둘 다 추천해요.
             </p>
-            <div class="review-card__tags">
-              <span class="review-card__tag">👍 맛있어요</span>
-              <span class="review-card__tag">🍽️ 양이 많아요</span>
-              <span class="review-card__tag">⏱️ 빨라요</span>
+            <div class="flex flex-wrap gap-1">
+              <span class="px-2 py-1 bg-bg-secondary rounded text-xs text-gray-600">👍 맛있어요</span>
+              <span class="px-2 py-1 bg-bg-secondary rounded text-xs text-gray-600">🍽️ 양이 많아요</span>
+              <span class="px-2 py-1 bg-bg-secondary rounded text-xs text-gray-600">⏱️ 빨라요</span>
             </div>
           </article>
         </div>
@@ -525,46 +566,93 @@
       <!-- ==========================================
            Empty State Example (for reference)
            ========================================== -->
-      <section id="screen-empty" class="screen" aria-labelledby="empty-title" hidden>
-        <div class="empty-state">
-          <span class="empty-state__icon" aria-hidden="true">📝</span>
-          <h1 id="empty-title" class="empty-state__title">아직 리뷰가 없어요</h1>
-          <p class="empty-state__desc">맛집에 방문하고 첫 리뷰를 남겨보세요!</p>
-          <button class="empty-state__btn" type="button">
+      <section id="screen-empty" class="screen hidden" aria-labelledby="empty-title">
+        <div class="flex flex-col items-center justify-center px-8 py-16 text-center">
+          <span class="text-6xl mb-4 opacity-50" aria-hidden="true">📝</span>
+          <h1 id="empty-title" class="text-lg font-semibold text-gray-700 mb-2">아직 리뷰가 없어요</h1>
+          <p class="text-sm text-gray-500 mb-8">맛집에 방문하고 첫 리뷰를 남겨보세요!</p>
+          <button class="inline-flex items-center gap-2 px-8 py-4 bg-primary text-white text-base font-semibold rounded-xl hover:bg-primary-dark transition-colors" type="button" data-action="write-review">
             <span aria-hidden="true">✏️</span>
             <span>리뷰 작성하기</span>
           </button>
         </div>
       </section>
+
+      <!-- ==========================================
+           Filter Modal (Hidden by default)
+           ========================================== -->
+      <div id="filter-modal" class="fixed inset-0 bg-black/50 flex items-end justify-center z-[200] opacity-0 invisible transition-all" data-modal="filter">
+        <div class="w-full max-w-app bg-white rounded-t-3xl transform translate-y-full transition-transform overflow-hidden">
+          <div class="flex items-center justify-between p-4 border-b border-gray-200">
+            <h2 class="text-lg font-bold">필터</h2>
+            <button class="w-8 h-8 flex items-center justify-center rounded-full text-gray-500 hover:bg-gray-100" type="button" data-action="close-modal">
+              ✕
+            </button>
+          </div>
+          <div class="p-4 max-h-[70vh] overflow-y-auto">
+            <!-- Filter Options -->
+            <div class="mb-6">
+              <h3 class="text-sm font-semibold text-gray-700 mb-3">음식 종류</h3>
+              <div class="flex flex-wrap gap-2">
+                <button class="px-4 py-2 bg-primary text-white rounded-full text-sm" type="button">전체</button>
+                <button class="px-4 py-2 bg-gray-100 text-gray-600 rounded-full text-sm hover:bg-gray-200" type="button">한식</button>
+                <button class="px-4 py-2 bg-gray-100 text-gray-600 rounded-full text-sm hover:bg-gray-200" type="button">일식</button>
+                <button class="px-4 py-2 bg-gray-100 text-gray-600 rounded-full text-sm hover:bg-gray-200" type="button">중식</button>
+                <button class="px-4 py-2 bg-gray-100 text-gray-600 rounded-full text-sm hover:bg-gray-200" type="button">양식</button>
+                <button class="px-4 py-2 bg-gray-100 text-gray-600 rounded-full text-sm hover:bg-gray-200" type="button">분식</button>
+              </div>
+            </div>
+            <div class="mb-6">
+              <h3 class="text-sm font-semibold text-gray-700 mb-3">거리</h3>
+              <div class="flex flex-wrap gap-2">
+                <button class="px-4 py-2 bg-primary text-white rounded-full text-sm" type="button">500m 이내</button>
+                <button class="px-4 py-2 bg-gray-100 text-gray-600 rounded-full text-sm hover:bg-gray-200" type="button">1km 이내</button>
+                <button class="px-4 py-2 bg-gray-100 text-gray-600 rounded-full text-sm hover:bg-gray-200" type="button">2km 이내</button>
+              </div>
+            </div>
+            <div class="mb-6">
+              <h3 class="text-sm font-semibold text-gray-700 mb-3">가격대</h3>
+              <div class="flex flex-wrap gap-2">
+                <button class="px-4 py-2 bg-gray-100 text-gray-600 rounded-full text-sm hover:bg-gray-200" type="button">~10,000원</button>
+                <button class="px-4 py-2 bg-gray-100 text-gray-600 rounded-full text-sm hover:bg-gray-200" type="button">10,000~20,000원</button>
+                <button class="px-4 py-2 bg-gray-100 text-gray-600 rounded-full text-sm hover:bg-gray-200" type="button">20,000원~</button>
+              </div>
+            </div>
+            <button class="w-full py-4 bg-primary text-white text-lg font-bold rounded-xl hover:bg-primary-dark transition-colors" type="button" data-action="apply-filter">
+              필터 적용하기
+            </button>
+          </div>
+        </div>
+      </div>
     </main>
 
     <!-- ==========================================
          Bottom Navigation
          ========================================== -->
-    <nav class="app__nav" aria-label="메인 네비게이션">
-      <ul class="nav">
+    <nav class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-app bg-white border-t border-gray-200 z-50 pb-[env(safe-area-inset-bottom)]" aria-label="메인 네비게이션">
+      <ul class="flex items-center justify-around py-2">
         <li>
-          <a href="#screen-home" class="nav__item nav__item--active" aria-current="page">
-            <span class="nav__icon" aria-hidden="true">🏠</span>
-            <span class="nav__label">홈</span>
+          <a href="#screen-home" class="flex flex-col items-center gap-1 px-4 py-2 rounded-xl min-w-[64px] text-primary transition-colors" data-nav="home" aria-current="page">
+            <span class="text-xl" aria-hidden="true">🏠</span>
+            <span class="text-xs font-medium">홈</span>
           </a>
         </li>
         <li>
-          <a href="#screen-restaurants" class="nav__item">
-            <span class="nav__icon" aria-hidden="true">🔍</span>
-            <span class="nav__label">탐색</span>
+          <a href="#screen-restaurants" class="flex flex-col items-center gap-1 px-4 py-2 rounded-xl min-w-[64px] text-gray-500 hover:bg-gray-100 transition-colors" data-nav="restaurants">
+            <span class="text-xl" aria-hidden="true">🔍</span>
+            <span class="text-xs font-medium">탐색</span>
           </a>
         </li>
         <li>
-          <a href="#screen-gacha" class="nav__item">
-            <span class="nav__icon" aria-hidden="true">🎲</span>
-            <span class="nav__label">랜덤</span>
+          <a href="#screen-gacha" class="flex flex-col items-center gap-1 px-4 py-2 rounded-xl min-w-[64px] text-gray-500 hover:bg-gray-100 transition-colors" data-nav="gacha">
+            <span class="text-xl" aria-hidden="true">🎲</span>
+            <span class="text-xs font-medium">랜덤</span>
           </a>
         </li>
         <li>
-          <a href="#screen-reviews" class="nav__item">
-            <span class="nav__icon" aria-hidden="true">📝</span>
-            <span class="nav__label">리뷰</span>
+          <a href="#screen-reviews" class="flex flex-col items-center gap-1 px-4 py-2 rounded-xl min-w-[64px] text-gray-500 hover:bg-gray-100 transition-colors" data-nav="reviews">
+            <span class="text-xl" aria-hidden="true">📝</span>
+            <span class="text-xs font-medium">리뷰</span>
           </a>
         </li>
       </ul>
@@ -572,6 +660,6 @@
   </div>
 
   <!-- JavaScript 연결 (추후 기능 구현용) -->
-  <script src="script.js"></script>
+  <script src="client.js"></script>
 </body>
 </html>
