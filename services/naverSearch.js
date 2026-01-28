@@ -284,10 +284,27 @@ async function reverseGeocode(options) {
 
   if (roadAddress) {
     fullAddress = roadAddress.address_name;
-    shortAddress = `${roadAddress.region_2depth_name} ${roadAddress.region_3depth_name}`.trim();
+    // 도로명 주소: 구 + 동 + 도로명 (더 구체적)
+    const roadName = roadAddress.road_name || '';
+    const buildingName = roadAddress.building_name || '';
+    
+    if (roadName) {
+      shortAddress = `${roadAddress.region_3depth_name} ${roadName}`.trim();
+    } else {
+      shortAddress = `${roadAddress.region_2depth_name} ${roadAddress.region_3depth_name}`.trim();
+    }
   } else if (address) {
     fullAddress = address.address_name;
-    shortAddress = `${address.region_2depth_name} ${address.region_3depth_name}`.trim();
+    // 지번 주소: 구 + 동 + 지번 (더 구체적)
+    const mainAddressNo = address.main_address_no || '';
+    const subAddressNo = address.sub_address_no || '';
+    
+    if (mainAddressNo) {
+      const addressNo = subAddressNo ? `${mainAddressNo}-${subAddressNo}` : mainAddressNo;
+      shortAddress = `${address.region_3depth_name} ${addressNo}`.trim();
+    } else {
+      shortAddress = `${address.region_2depth_name} ${address.region_3depth_name}`.trim();
+    }
   }
 
   return {

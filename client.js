@@ -296,6 +296,13 @@ class NearbyRestaurantsUI {
     try {
       const result = await this.locationManager.fetchNearbyRestaurants(location, category, 10);
       this.currentRestaurants = result.restaurants; // 검색 결과 저장
+      
+      console.log('🔍 검색 완료:', {
+        location: result.meta.location,
+        count: result.restaurants.length,
+        restaurants: result.restaurants.map(r => r.name || r.title)
+      });
+      
       this.renderRestaurantList(result.restaurants, result.meta);
       this.showStatus(`'${result.meta.location}' 주변 음식점 ${result.restaurants.length}개를 찾았습니다.`, 'success');
     } catch (error) {
@@ -312,17 +319,47 @@ class NearbyRestaurantsUI {
       return;
     }
 
-    const randomIndex = Math.floor(Math.random() * this.currentRestaurants.length);
-    const restaurant = this.currentRestaurants[randomIndex];
+    // 버튼 애니메이션 시작
+    const randomBtn = document.getElementById('btn-random-select');
+    if (randomBtn) {
+      randomBtn.disabled = true;
+      randomBtn.classList.add('animate-pulse');
+      randomBtn.innerHTML = `
+        <span class="inline-block w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></span>
+        <span>선택 중...</span>
+      `;
+    }
 
-    // 가챠 결과 형식으로 변환
-    const formattedRestaurant = this.formatRestaurantForDisplay(restaurant, randomIndex);
+    // 랜덤 선택 애니메이션 (1초 딜레이)
+    setTimeout(() => {
+      const randomIndex = Math.floor(Math.random() * this.currentRestaurants.length);
+      const restaurant = this.currentRestaurants[randomIndex];
 
-    // 전역 selectedRestaurant 설정
-    selectedRestaurant = formattedRestaurant;
+      console.log('🎲 랜덤 선택:', {
+        totalRestaurants: this.currentRestaurants.length,
+        selectedIndex: randomIndex,
+        selectedRestaurant: restaurant.name || restaurant.title
+      });
 
-    // 선택 확인 모달 표시
-    showSelectionConfirmation(formattedRestaurant);
+      // 가챠 결과 형식으로 변환
+      const formattedRestaurant = this.formatRestaurantForDisplay(restaurant, randomIndex);
+
+      // 전역 selectedRestaurant 설정
+      selectedRestaurant = formattedRestaurant;
+
+      // 버튼 원래 상태로 복구
+      if (randomBtn) {
+        randomBtn.disabled = false;
+        randomBtn.classList.remove('animate-pulse');
+        randomBtn.innerHTML = `
+          <span aria-hidden="true">🎲</span>
+          <span>랜덤으로 선택하기</span>
+        `;
+      }
+
+      // 선택 확인 모달 표시
+      showSelectionConfirmation(formattedRestaurant);
+    }, 1000);
   }
 
   /**
