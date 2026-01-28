@@ -7,6 +7,7 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const { createClient } = require('@supabase/supabase-js');
+const { searchNearbyRestaurants } = require('./services/naverSearch');
 require('dotenv').config();
 
 // ===================
@@ -245,6 +246,91 @@ app.post('/api/restaurants', async (req, res) => {
       data
     });
   } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// ===================
+// Nearby Restaurant Search (Naver API)
+// ===================
+
+// GET /api/nearby-restaurants - 주변 음식점 검색 (네이버 지역검색 API)
+app.get('/api/nearby-restaurants', async (req, res) => {
+  try {
+    const {
+      location,
+      latitude,
+      longitude,
+      category,
+      count = 10
+    } = req.query;
+
+    // 위치 정보 확인 - location 또는 좌표 필요
+    let searchLocation = location;
+
+    // 좌표가 주어진 경우 역지오코딩으로 주소 획득 시도
+    // (현재는 좌표를 직접 사용할 수 없으므로 location 파라미터 필수)
+    if (!searchLocation) {
+      if (latitude && longitude) {
+        // TODO: 역지오코딩 API 연동 시 좌표로부터 주소 획득
+        // 현재는 좌표만으로는 검색 불가
+        return res.status(400).json({
+          success: false,
+          error: '위치 정보(location)가 필요합니다. 예: location=강남역',
+          hint: '좌표 기반 검색은 향후 지원 예정입니다.'
+        });
+      }
+
+      return res.status(400).json({
+        success: false,
+        error: '위치 정보(location)가 필요합니다.',
+        example: '/api/nearby-restaurants?location=강남역&category=한식&count=10'
+      });
+    }
+
+    // 검색 개수 제한 (1-10)
+    const searchCount = Math.max(1, Math.min(parseInt(count, 10) || 10, 10));
+
+    // 네이버 API 호출
+    const result = await searchNearbyRestaurants({
+      location: searchLocation,
+      category: category || '',
+      count: searchCount
+    });
+
+    res.json({
+      success: true,
+      data: result.restaurants,
+      meta: {
+        total: result.total,
+        location: result.location,
+        category: result.category,
+        source: 'naver_local_search'
+      }
+    });
+  } catch (error) {
+    console.error('주변 음식점 검색 오류:', error.message);
+
+    // 에러 유형에 따른 응답
+    if (error.message.includes('네이버 API 인증')) {
+      return res.status(503).json({
+        success: false,
+        error: '외부 검색 서비스를 사용할 수 없습니다.',
+        code: 'NAVER_API_CONFIG_ERROR'
+      });
+    }
+
+    if (error.message.includes('네이버 API 호출 실패')) {
+      return res.status(502).json({
+        success: false,
+        error: '외부 검색 서비스 응답 오류',
+        code: 'NAVER_API_ERROR'
+      });
+    }
+
     res.status(500).json({
       success: false,
       error: error.message
@@ -590,17 +676,18 @@ app.listen(PORT, () => {
   console.log(`🔑 API Key: ${SUPABASE_ANON_KEY.substring(0, 20)}...`);
   console.log('');
   console.log('Available endpoints:');
-  console.log('  GET  /api/health           - Health check');
-  console.log('  GET  /api/restaurants      - List restaurants');
-  console.log('  GET  /api/restaurants/random - Random restaurant (gacha)');
-  console.log('  GET  /api/restaurants/:id  - Get restaurant');
-  console.log('  POST /api/restaurants      - Add restaurant');
-  console.log('  GET  /api/visits           - List visits');
-  console.log('  POST /api/visits           - Add visit');
-  console.log('  GET  /api/reviews          - List reviews');
-  console.log('  POST /api/reviews          - Add review');
-  console.log('  PATCH /api/reviews/:id     - Update review');
-  console.log('  DELETE /api/reviews/:id    - Delete review');
+  console.log('  GET  /api/health              - Health check');
+  console.log('  GET  /api/restaurants         - List restaurants');
+  console.log('  GET  /api/restaurants/random  - Random restaurant (gacha)');
+  console.log('  GET  /api/restaurants/:id     - Get restaurant');
+  console.log('  POST /api/restaurants         - Add restaurant');
+  console.log('  GET  /api/nearby-restaurants  - Search nearby (Naver API)');
+  console.log('  GET  /api/visits              - List visits');
+  console.log('  POST /api/visits              - Add visit');
+  console.log('  GET  /api/reviews             - List reviews');
+  console.log('  POST /api/reviews             - Add review');
+  console.log('  PATCH /api/reviews/:id        - Update review');
+  console.log('  DELETE /api/reviews/:id       - Delete review');
   console.log('');
 });
 
