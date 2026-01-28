@@ -981,7 +981,15 @@ app.delete('/api/reviews/:id', async (req, res) => {
 // ===================
 // Static File Serving
 // ===================
+// Catch-all route for SPA (Single Page Application)
+// Only serve index.html for non-file requests (no extension)
 app.get('*', (req, res) => {
+  // If request is for a file with extension (e.g., .js, .css), let static middleware handle it
+  if (req.path.includes('.')) {
+    // If static middleware didn't find it, return 404
+    return res.status(404).send('File not found');
+  }
+  // For routes without extension (SPA routes), serve index.html
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
