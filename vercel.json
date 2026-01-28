@@ -5,16 +5,36 @@
     {
       "src": "server.js",
       "use": "@vercel/node"
-    }
-  ],
-  "rewrites": [
-    {
-      "source": "/api/:path*",
-      "destination": "/server.js"
     },
     {
-      "source": "/((?!.*\\.).*)",
-      "destination": "/server.js"
+      "src": "client.js",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "gacha.css",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "style.css",
+      "use": "@vercel/static"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/client.js",
+      "dest": "/client.js"
+    },
+    {
+      "src": "/gacha.css",
+      "dest": "/gacha.css"
+    },
+    {
+      "src": "/style.css",
+      "dest": "/style.css"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/server.js"
     }
   ],
   "headers": [
