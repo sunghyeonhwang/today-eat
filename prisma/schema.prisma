@@ -1,0 +1,102 @@
+// Prisma Schema for What-eat-today
+// Database: Supabase PostgreSQL
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// =====================================================
+// 1. RESTAURANTS TABLE (식당 정보)
+// =====================================================
+model Restaurant {
+  id            String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  name          String   @db.VarChar(100)
+  emoji         String   @default("🍽️") @db.VarChar(10)
+  category      String   @db.VarChar(50)
+  subCategory   String?  @map("sub_category") @db.VarChar(50)
+  description   String?  @db.Text
+  address       String?  @db.VarChar(255)
+  phone         String?  @db.VarChar(20)
+  latitude      Decimal? @db.Decimal(10, 8)
+  longitude     Decimal? @db.Decimal(11, 8)
+  priceRange    Int?     @map("price_range")
+  averagePrice  Int?     @map("average_price")
+  openingHours  Json?    @map("opening_hours") @db.JsonB
+  imageUrl      String?  @map("image_url") @db.VarChar(500)
+  isActive      Boolean  @default(true) @map("is_active")
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  // Relations
+  visitHistory VisitHistory[]
+  reviews      Review[]
+
+  @@index([category])
+  @@index([isActive])
+  @@index([latitude, longitude])
+  @@index([createdAt(sort: Desc)])
+  @@map("restaurants")
+}
+
+// =====================================================
+// 2. VISIT_HISTORY TABLE (이용 기록)
+// =====================================================
+model VisitHistory {
+  id           String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  restaurantId String    @map("restaurant_id") @db.Uuid
+  userId       String?   @map("user_id") @db.Uuid
+  sessionId    String?   @map("session_id") @db.VarChar(100)
+  visitType    String    @default("manual") @map("visit_type") @db.VarChar(20)
+  visitedAt    DateTime  @default(now()) @map("visited_at") @db.Timestamptz(6)
+  memo         String?   @db.Text
+  isFavorite   Boolean   @default(false) @map("is_favorite")
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  // Relations
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  reviews    Review[]
+
+  @@index([restaurantId])
+  @@index([userId])
+  @@index([sessionId])
+  @@index([visitedAt(sort: Desc)])
+  @@index([visitType])
+  @@map("visit_history")
+}
+
+// =====================================================
+// 3. REVIEWS TABLE (리뷰)
+// =====================================================
+model Review {
+  id           String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  restaurantId String    @map("restaurant_id") @db.Uuid
+  visitId      String?   @map("visit_id") @db.Uuid
+  userId       String?   @map("user_id") @db.Uuid
+  sessionId    String?   @map("session_id") @db.VarChar(100)
+  rating       Decimal   @db.Decimal(2, 1)
+  title        String?   @db.VarChar(100)
+  content      String    @db.Text
+  tags         String[]  @db.Text
+  imageUrls    String[]  @default([]) @map("image_urls") @db.Text
+  isPublic     Boolean   @default(true) @map("is_public")
+  isDeleted    Boolean   @default(false) @map("is_deleted")
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  // Relations
+  restaurant Restaurant    @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  visit      VisitHistory? @relation(fields: [visitId], references: [id], onDelete: SetNull)
+
+  @@index([restaurantId])
+  @@index([userId])
+  @@index([sessionId])
+  @@index([rating])
+  @@index([createdAt(sort: Desc)])
+  @@index([isPublic])
+  @@index([isDeleted])
+  @@map("reviews")
+}

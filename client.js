@@ -4,23 +4,12 @@
  */
 
 // ===================
-// Restaurant Data (Fallback for gacha)
+// Restaurant Data (위치 검색으로 채워짐)
 // ===================
-const defaultRestaurants = [
-  { id: 1, emoji: '🍛', name: '황금카레', category: '일식 · 카레', rating: 4.7, distance: '120m', price: '9,000원', address: '서울시 강남구 역삼동 123-45', telephone: '02-1234-5678' },
-  { id: 2, emoji: '🍜', name: '맛있는 국수집', category: '한식 · 국수', rating: 4.5, distance: '350m', price: '8,000원', address: '서울시 강남구 역삼동 234-56', telephone: '02-2345-6789' },
-  { id: 3, emoji: '🍕', name: '피자파티', category: '양식 · 피자', rating: 4.8, distance: '500m', price: '15,000원', address: '서울시 강남구 역삼동 345-67', telephone: '02-3456-7890' },
-  { id: 4, emoji: '🍔', name: '버거하우스', category: '양식 · 버거', rating: 4.3, distance: '650m', price: '12,000원', address: '서울시 강남구 역삼동 456-78', telephone: '02-4567-8901' },
-  { id: 5, emoji: '🍣', name: '스시도쿄', category: '일식 · 초밥', rating: 4.9, distance: '800m', price: '25,000원', address: '서울시 강남구 역삼동 567-89', telephone: '02-5678-9012' },
-  { id: 6, emoji: '🍲', name: '엄마손찌개', category: '한식 · 찌개', rating: 4.6, distance: '200m', price: '10,000원', address: '서울시 강남구 역삼동 678-90', telephone: '02-6789-0123' },
-  { id: 7, emoji: '🍝', name: '파스타공방', category: '양식 · 파스타', rating: 4.4, distance: '450m', price: '14,000원', address: '서울시 강남구 역삼동 789-01', telephone: '02-7890-1234' },
-  { id: 8, emoji: '🌮', name: '타코마니아', category: '멕시칸 · 타코', rating: 4.2, distance: '700m', price: '11,000원', address: '서울시 강남구 역삼동 890-12', telephone: '02-8901-2345' },
-  { id: 9, emoji: '🍱', name: '도시락명가', category: '한식 · 도시락', rating: 4.5, distance: '300m', price: '7,000원', address: '서울시 강남구 역삼동 901-23', telephone: '02-9012-3456' },
-  { id: 10, emoji: '🥗', name: '샐러드팜', category: '양식 · 샐러드', rating: 4.7, distance: '550m', price: '13,000원', address: '서울시 강남구 역삼동 012-34', telephone: '02-0123-4567' }
-];
+const defaultRestaurants = [];
 
-// 가챠에 사용할 식당 목록 (API에서 가져온 데이터 또는 기본값)
-let gachaRestaurants = [...defaultRestaurants];
+// 가챠에 사용할 식당 목록 (위치 검색 결과)
+let gachaRestaurants = [];
 
 // ===================
 // Location & Nearby Restaurants Manager
@@ -142,8 +131,7 @@ class NearbyRestaurantsUI {
     this.currentRestaurants = []; // 현재 검색 결과 저장
     this.selectedFilters = {
       category: '전체',
-      distance: '500m 이내',
-      priceRange: '전체'
+      distance: '500m 이내'
     };
   }
 
@@ -784,6 +772,15 @@ function showScreen(screenName) {
 
     currentScreen = screenName;
     updateNavigation(screenName);
+
+    // 리뷰 작성 화면일 때 별점 초기화 (화면 전환 후 실행)
+    if (screenName === 'reviewWrite' && reviewWriteUI) {
+      setTimeout(() => {
+        reviewWriteUI.currentRating = 0;
+        reviewWriteUI.updateRatingDisplay(0);
+        console.log('⭐ 리뷰 작성 화면 진입 - 별점 초기화 완료');
+      }, 50);
+    }
   }
 }
 
@@ -836,17 +833,69 @@ class GachaAnimator {
   constructor() {
     this.slotWindow = null;
     this.reelContainer = null;
-    this.emojis = gachaRestaurants.map(r => r.emoji);
-    this.spinDuration = 2500; // Total spin time in ms (slightly longer for more excitement)
+    // 다양한 음식 이모지 (결과 예측 방지용)
+    this.defaultEmojis = [
+      '🍛', '🍜', '🍕', '🍔', '🍣', '🍲', '🍝', '🌮', '🍱', '🥗',
+      '🍰', '🍩', '🍿', '🥘', '🍗', '🥩', '🌯', '🥪', '🍤', '🍙',
+      '🍚', '🍘', '🥟', '🍢', '🍡', '🥠', '🍧', '🍨', '🎂', '🥧',
+      '🍪', '🍫', '🍬', '🍭', '🧁', '🥮', '🍯', '🥐', '🥖', '🥨',
+      '🧀', '🥚', '🍳', '🥞', '🧇', '🥓', '🥯', '🍖', '🦴', '🌭'
+    ];
+    this.emojis = [...this.defaultEmojis];
+    this.spinDuration = 2500;
     this.isAnimating = false;
-    this.anticipationDuration = 500; // Pre-spin anticipation
+    this.anticipationDuration = 500;
+    this.nearbyRestaurants = []; // 위치 기반 검색 결과
+    this.currentLocation = null; // 현재 위치
   }
 
   /**
-   * 이모지 목록 업데이트
+   * 이모지 목록 업데이트 (항상 다양한 이모지 사용)
    */
   refreshEmojis() {
-    this.emojis = gachaRestaurants.map(r => r.emoji);
+    // 기본 이모지 셔플
+    this.emojis = [...this.defaultEmojis].sort(() => Math.random() - 0.5);
+  }
+  
+  /**
+   * 위치 설정
+   */
+  setLocation(location) {
+    this.currentLocation = location;
+    console.log('🎰 가챠 위치 설정:', location);
+  }
+  
+  /**
+   * 주변 음식점 검색
+   */
+  async searchNearbyRestaurants() {
+    if (!this.currentLocation) {
+      throw new Error('위치를 먼저 설정해주세요');
+    }
+    
+    try {
+      const params = new URLSearchParams({
+        query: '맛집',
+        latitude: this.currentLocation.latitude,
+        longitude: this.currentLocation.longitude,
+        radius: 1000,
+        display: 20
+      });
+      
+      const response = await fetch(`/api/nearby-restaurants?${params}`);
+      const result = await response.json();
+      
+      if (result.success && result.data && result.data.length > 0) {
+        this.nearbyRestaurants = result.data;
+        console.log('🎰 주변 음식점 검색 완료:', this.nearbyRestaurants.length, '개');
+        return this.nearbyRestaurants;
+      } else {
+        throw new Error('주변 음식점을 찾을 수 없습니다');
+      }
+    } catch (error) {
+      console.error('주변 음식점 검색 실패:', error);
+      throw error;
+    }
   }
 
   init() {
@@ -910,14 +959,37 @@ class GachaAnimator {
     if (this.isAnimating) return null;
     this.isAnimating = true;
 
-    // 이모지 목록 새로고침
+    // 이모지 목록 새로고침 (다양한 이모지로)
     this.refreshEmojis();
 
-    // Select random restaurant from current gacha data
-    const randomIndex = Math.floor(Math.random() * gachaRestaurants.length);
-    const selected = gachaRestaurants[randomIndex];
+    let selected;
+    
+    // 위치 기반 주변 음식점에서 선택
+    if (this.nearbyRestaurants.length > 0) {
+      const randomIndex = Math.floor(Math.random() * this.nearbyRestaurants.length);
+      const restaurant = this.nearbyRestaurants[randomIndex];
+      
+      // 카테고리에서 이모지 추출
+      const categoryStr = typeof restaurant.category === 'object' 
+        ? (restaurant.category.sub || restaurant.category.main || '음식점')
+        : (restaurant.category || '음식점');
+      
+      selected = {
+        id: restaurant.id || `nearby-${randomIndex}`,
+        name: restaurant.name,
+        emoji: this.getCategoryEmoji(categoryStr),
+        category: categoryStr,
+        address: restaurant.address,
+        telephone: restaurant.telephone,
+        coordinates: restaurant.coordinates
+      };
+    } else {
+      // 주변 음식점이 없으면 기본 데이터 사용
+      const randomIndex = Math.floor(Math.random() * gachaRestaurants.length);
+      selected = gachaRestaurants[randomIndex];
+    }
 
-    // Update reel with selected item
+    // Update reel with random emojis (결과 예측 불가)
     this.updateReelItems(selected.emoji);
 
     // Phase 0: Anticipation (slight pull-back effect)
@@ -947,15 +1019,32 @@ class GachaAnimator {
 
     // Calculate final position to show selected emoji
     const itemHeight = 120;
-    const targetPosition = -20 * itemHeight; // Position of selected item
-    this.reel.style.transition = 'transform 1s cubic-bezier(0.05, 0.7, 0.1, 1)';
+    const targetPosition = -20 * itemHeight;
+    this.reel.style.transition = 'transform 1.2s cubic-bezier(0.05, 0.7, 0.1, 1)';
     this.reel.style.transform = `translateY(${targetPosition}px)`;
 
-    await this.delay(1000);
+    await this.delay(1200);
 
-    // Phase 3: Reveal with dramatic pause
+    // Phase 3: Reveal - 자연스럽게 중앙으로 이동
     this.slotWindow.classList.remove('gacha-machine--stopping');
     this.slotWindow.classList.add('gacha-machine--revealed');
+
+    // 부드럽게 결과 표시 (스케일 애니메이션과 함께)
+    this.reel.style.transition = 'transform 0.3s ease-out, opacity 0.3s ease-out';
+    this.reel.style.opacity = '0';
+    
+    await this.delay(150);
+    
+    // 선택된 이모지만 표시
+    this.reel.innerHTML = `<div class="gacha-reel-item emoji-slot-item selected">${selected.emoji}</div>`;
+    this.reel.style.transform = 'translateY(0) scale(1.1)';
+    this.reel.style.opacity = '1';
+    
+    await this.delay(200);
+    
+    // 최종 위치로 안착
+    this.reel.style.transition = 'transform 0.2s ease-out';
+    this.reel.style.transform = 'translateY(0) scale(1)';
 
     // Trigger particle burst
     this.triggerParticleBurst();
@@ -965,6 +1054,28 @@ class GachaAnimator {
 
     this.isAnimating = false;
     return selected;
+  }
+  
+  /**
+   * 카테고리에 맞는 이모지 반환
+   */
+  getCategoryEmoji(category) {
+    const emojiMap = {
+      '한식': '🍚', '일식': '🍣', '중식': '🥟', '양식': '🍝',
+      '카페': '☕', '분식': '🍜', '치킨': '🍗', '피자': '🍕',
+      '버거': '🍔', '아시안': '🍛', '멕시칸': '🌮', '베트남': '🍜',
+      '태국': '🍛', '인도': '🍛', '샐러드': '🥗', '디저트': '🍰',
+      '빵': '🥐', '고기': '🥩', '해산물': '🦐', '국수': '🍜',
+      '카레': '🍛', '초밥': '🍣', '라멘': '🍜', '우동': '🍜',
+      '짜장': '🍜', '짬뽕': '🍜', '탕수육': '🥟', '파스타': '🍝'
+    };
+    
+    for (const [key, emoji] of Object.entries(emojiMap)) {
+      if (category && category.includes(key)) {
+        return emoji;
+      }
+    }
+    return '🍽️';
   }
 
   /**
@@ -1129,27 +1240,32 @@ function displayGachaResult(restaurant) {
     category.classList.add('gacha-result-category');
   }
 
-  // 기본 정보 (별점, 거리, 가격) 업데이트
+  // 기본 정보 (거리) 업데이트 - 별점은 네이버 API에서 제공하지 않음
   if (infoContainer) {
     infoContainer.classList.add('gacha-result-info');
-    infoContainer.innerHTML = `
-      <span class="flex items-center gap-1 text-sm text-gray-600">
-        <span aria-hidden="true">⭐</span>
-        <span class="font-semibold">${restaurant.rating}</span>
-      </span>
-      ${restaurant.distance && restaurant.distance !== '-' ? `
-      <span class="flex items-center gap-1 text-sm text-gray-600">
-        <span aria-hidden="true">📍</span>
-        <span>${restaurant.distance}</span>
-      </span>
-      ` : ''}
-      ${restaurant.price && restaurant.price !== '-' ? `
-      <span class="flex items-center gap-1 text-sm text-gray-600">
-        <span aria-hidden="true">💰</span>
-        <span>${restaurant.price}</span>
-      </span>
-      ` : ''}
-    `;
+    const infoItems = [];
+    
+    // 거리 정보
+    if (restaurant.distance && restaurant.distance !== '-') {
+      infoItems.push(`
+        <span class="flex items-center gap-1 text-sm text-gray-600">
+          <span aria-hidden="true">📍</span>
+          <span>${restaurant.distance}</span>
+        </span>
+      `);
+    }
+    
+    // 카테고리 정보
+    if (restaurant.category) {
+      infoItems.push(`
+        <span class="flex items-center gap-1 text-sm text-gray-600">
+          <span aria-hidden="true">🍽️</span>
+          <span>${restaurant.category}</span>
+        </span>
+      `);
+    }
+    
+    infoContainer.innerHTML = infoItems.join('');
   }
 
   // 주소 정보 업데이트
@@ -1174,28 +1290,10 @@ function displayGachaResult(restaurant) {
     }
   }
 
-  // 최근 리뷰 표시 (더미 데이터 또는 실제 데이터)
+  // 리뷰 컨테이너 숨기기 (리뷰가 없으면 표시하지 않음)
   if (reviewContainer) {
-    const sampleReviews = [
-      '정말 맛있어요! 다음에 또 방문할게요 👍',
-      '분위기도 좋고 음식도 훌륭합니다 ✨',
-      '가성비 최고! 강력 추천합니다 💯',
-      '친절한 서비스와 맛있는 음식 🥰',
-      '점심 특선이 정말 좋아요 🍽️'
-    ];
-    const randomReview = sampleReviews[Math.floor(Math.random() * sampleReviews.length)];
-
-    reviewContainer.classList.remove('hidden');
-    reviewContainer.classList.add('gacha-result-review');
-    reviewContainer.innerHTML = `
-      <div class="bg-bg-secondary rounded-xl p-4 text-left">
-        <div class="flex items-center gap-2 mb-2">
-          <span class="text-xs font-semibold text-gray-500">💬 최근 리뷰</span>
-          <span class="flex text-amber-400 text-xs">⭐⭐⭐⭐⭐</span>
-        </div>
-        <p class="text-sm text-gray-700 leading-relaxed">"${randomReview}"</p>
-      </div>
-    `;
+    reviewContainer.classList.add('hidden');
+    reviewContainer.innerHTML = '';
   }
 
   // Add animation classes to badge
@@ -1244,6 +1342,24 @@ const confettiSystem = new ConfettiSystem();
 
 function handleGachaButtonClick() {
   if (isSpinning) return;
+  
+  // 주변 음식점이 없으면 경고
+  if (!gachaAnimator.nearbyRestaurants || gachaAnimator.nearbyRestaurants.length === 0) {
+    const statusEl = document.getElementById('gacha-location-status');
+    if (statusEl) {
+      statusEl.textContent = '⚠️ 먼저 위치를 입력하고 불러오기를 눌러주세요!';
+      statusEl.className = 'mt-2 text-xs text-center text-red-500 font-semibold animate-pulse';
+    }
+    // 위치 입력창에 포커스
+    const locationInput = document.getElementById('gacha-location-input');
+    if (locationInput) {
+      locationInput.focus();
+      locationInput.classList.add('border-red-500');
+      setTimeout(() => locationInput.classList.remove('border-red-500'), 2000);
+    }
+    return;
+  }
+  
   isSpinning = true;
 
   const gachaBtn = document.querySelector('[data-action="gacha"]');
@@ -1267,6 +1383,13 @@ function handleGachaButtonClick() {
         }
         isSpinning = false;
       }, 500);
+    } else {
+      // 결과가 없으면 버튼 상태 복원
+      if (gachaBtn) {
+        gachaBtn.classList.remove('gacha-btn--spinning');
+        gachaBtn.innerHTML = '<span aria-hidden="true">🎰</span><span>뽑기!</span>';
+      }
+      isSpinning = false;
     }
   });
 }
@@ -1500,20 +1623,28 @@ function initGachaLocationSearch() {
       <div class="text-center mb-4">
         <p class="text-sm text-gray-500">어디 주변에서 찾을까요?</p>
       </div>
-      <div class="flex gap-2">
+      <div class="flex gap-2 items-center">
+        <button
+          type="button"
+          id="btn-gacha-gps"
+          class="w-10 h-10 flex-shrink-0 flex items-center justify-center bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors text-lg"
+          title="현재 위치 사용"
+        >
+          📍
+        </button>
         <input
           type="text"
           id="gacha-location-input"
-          placeholder="위치 입력 (예: 강남역)"
-          class="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl text-sm focus:outline-none focus:border-secondary transition-colors"
+          placeholder="위치 입력"
+          class="flex-1 min-w-0 px-3 py-2.5 border-2 border-gray-200 rounded-lg text-sm focus:outline-none focus:border-secondary transition-colors"
           value=""
         />
         <button
           type="button"
           id="btn-gacha-load"
-          class="px-4 py-3 bg-secondary text-white font-semibold rounded-xl hover:bg-secondary-dark transition-colors text-sm"
+          class="flex-shrink-0 px-3 py-2.5 bg-secondary text-white font-semibold rounded-lg hover:bg-secondary-dark transition-colors text-sm whitespace-nowrap"
         >
-          불러오기
+          검색
         </button>
       </div>
       <div id="gacha-location-status" class="mt-2 text-xs text-center text-gray-400"></div>
@@ -1530,6 +1661,7 @@ function initGachaLocationSearch() {
 function setupGachaLocationEventListeners() {
   const loadBtn = document.getElementById('btn-gacha-load');
   const locationInput = document.getElementById('gacha-location-input');
+  const gpsBtn = document.getElementById('btn-gacha-gps');
 
   if (loadBtn) {
     loadBtn.addEventListener('click', handleGachaLocationLoad);
@@ -1541,6 +1673,91 @@ function setupGachaLocationEventListeners() {
         handleGachaLocationLoad();
       }
     });
+  }
+  
+  // GPS 버튼 클릭 이벤트
+  if (gpsBtn) {
+    gpsBtn.addEventListener('click', handleGachaGpsClick);
+  }
+}
+
+/**
+ * 가챠 GPS 위치 불러오기
+ */
+async function handleGachaGpsClick() {
+  const gpsBtn = document.getElementById('btn-gacha-gps');
+  const locationInput = document.getElementById('gacha-location-input');
+  const statusEl = document.getElementById('gacha-location-status');
+  
+  if (!navigator.geolocation) {
+    if (statusEl) {
+      statusEl.textContent = '이 브라우저에서는 GPS를 지원하지 않습니다';
+      statusEl.className = 'mt-2 text-xs text-center text-red-500';
+    }
+    return;
+  }
+  
+  // 로딩 상태 표시
+  if (gpsBtn) {
+    gpsBtn.disabled = true;
+    gpsBtn.innerHTML = '⏳';
+  }
+  if (statusEl) {
+    statusEl.textContent = '현재 위치를 가져오는 중...';
+    statusEl.className = 'mt-2 text-xs text-center text-gray-500';
+  }
+  
+  try {
+    const position = await new Promise((resolve, reject) => {
+      navigator.geolocation.getCurrentPosition(resolve, reject, {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0
+      });
+    });
+    
+    const { latitude, longitude } = position.coords;
+    
+    // 역지오코딩으로 주소 가져오기
+    if (statusEl) {
+      statusEl.textContent = '주소를 변환하는 중...';
+    }
+    
+    const response = await fetch(`/api/reverse-geocode?latitude=${latitude}&longitude=${longitude}`);
+    const result = await response.json();
+    
+    if (result.success && result.data) {
+      const address = result.data.shortAddress || result.data.address;
+      if (locationInput) {
+        locationInput.value = address;
+      }
+      
+      // 가챠 애니메이터에 좌표 저장
+      gachaAnimator.currentLocation = { latitude, longitude };
+      
+      if (statusEl) {
+        statusEl.textContent = `📍 ${address}`;
+        statusEl.className = 'mt-2 text-xs text-center text-green-600';
+      }
+      
+      // 자동으로 음식점 불러오기
+      handleGachaLocationLoad();
+    } else {
+      throw new Error('주소 변환 실패');
+    }
+  } catch (error) {
+    console.error('GPS 위치 가져오기 실패:', error);
+    if (statusEl) {
+      statusEl.textContent = error.code === 1 
+        ? '위치 권한이 거부되었습니다' 
+        : '위치를 가져올 수 없습니다';
+      statusEl.className = 'mt-2 text-xs text-center text-red-500';
+    }
+  } finally {
+    if (gpsBtn) {
+      gpsBtn.disabled = false;
+      gpsBtn.innerHTML = '📍';
+    }
   }
 }
 
@@ -1570,28 +1787,38 @@ async function handleGachaLocationLoad() {
   }
 
   try {
-    const restaurants = await gachaDataManager.loadRestaurantsForGacha(location);
-
-    if (restaurants && restaurants.length > 0) {
+    // 위치 기반 주변 식당 검색
+    const result = await locationManager.fetchNearbyRestaurants(location, '', 20);
+    
+    if (result.restaurants && result.restaurants.length > 0) {
+      // 가챠 애니메이터에 주변 음식점 저장
+      gachaAnimator.nearbyRestaurants = result.restaurants;
+      gachaAnimator.currentLocation = result.coordinates;
+      
       // 가챠 애니메이터 이모지 새로고침
       gachaAnimator.refreshEmojis();
       gachaAnimator.updateReelItems();
 
       if (statusEl) {
-        statusEl.textContent = `✅ ${location} 주변 ${restaurants.length}개 식당이 준비되었습니다!`;
+        statusEl.textContent = `✅ ${location} 주변 ${result.restaurants.length}개 식당이 준비되었습니다!`;
         statusEl.className = 'mt-2 text-xs text-center text-green-600';
       }
+      
+      console.log('🎰 가챠 주변 음식점 로드 완료:', result.restaurants.length, '개');
     } else {
+      // 검색 결과 없음
+      gachaAnimator.nearbyRestaurants = [];
       if (statusEl) {
-        statusEl.textContent = '검색 결과가 없어 기본 목록을 사용합니다';
+        statusEl.textContent = '검색 결과가 없습니다. 다른 위치를 입력해주세요.';
         statusEl.className = 'mt-2 text-xs text-center text-amber-600';
       }
     }
   } catch (error) {
     console.error('가챠 위치 검색 오류:', error);
+    gachaAnimator.nearbyRestaurants = [];
     if (statusEl) {
-      statusEl.textContent = '검색 실패. 기본 목록을 사용합니다';
-      statusEl.className = 'mt-2 text-xs text-center text-amber-600';
+      statusEl.textContent = '검색 실패. 다시 시도해주세요.';
+      statusEl.className = 'mt-2 text-xs text-center text-red-500';
     }
   } finally {
     if (loadBtn) {
@@ -1629,8 +1856,7 @@ function setupFilterOptions() {
   // 필터 상태 저장
   let selectedFilters = {
     category: '전체',
-    distance: '500m 이내',
-    priceRange: '전체'
+    distance: '500m 이내'
   };
 
   // 모든 필터 버튼 찾기
@@ -1659,7 +1885,6 @@ function setupFilterOptions() {
         const filterValue = button.textContent.trim();
         if (sectionIndex === 0) selectedFilters.category = filterValue;
         else if (sectionIndex === 1) selectedFilters.distance = filterValue;
-        else if (sectionIndex === 2) selectedFilters.priceRange = filterValue;
       });
     });
   });
@@ -1683,19 +1908,6 @@ function setupFilterOptions() {
       toggleFilterModal(false);
     });
   }
-}
-
-function updateRatingStars(rating) {
-  document.querySelectorAll('[data-rating]').forEach(star => {
-    const starRating = parseInt(star.getAttribute('data-rating'));
-    if (starRating <= rating) {
-      star.classList.add('text-amber-400');
-      star.classList.remove('text-gray-300');
-    } else {
-      star.classList.remove('text-amber-400');
-      star.classList.add('text-gray-300');
-    }
-  });
 }
 
 // ===================
@@ -1792,60 +2004,6 @@ class ReviewHistoryUI {
   }
 
   /**
-   * 데모 리뷰 데이터 (API에 데이터가 없을 때 사용)
-   */
-  getDemoReviews() {
-    const now = new Date();
-    return [
-      {
-        id: 'demo-1',
-        restaurant_id: 'demo-rest-1',
-        restaurant: { id: 'demo-rest-1', name: '황금카레', emoji: '🍛', category: '일식' },
-        rating: 5,
-        content: '카레가 정말 진하고 맛있어요! 돈까스도 바삭바삭하고 양도 푸짐합니다. 점심시간에 갔는데 사람이 많아서 좀 기다렸지만 그만한 가치가 있었어요. 다음에 또 방문할 예정입니다.',
-        tags: ['tasty', 'portion', 'value'],
-        created_at: new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000).toISOString() // 2일 전
-      },
-      {
-        id: 'demo-2',
-        restaurant_id: 'demo-rest-2',
-        restaurant: { id: 'demo-rest-2', name: '피자파티', emoji: '🍕', category: '양식' },
-        rating: 4,
-        content: '치즈가 정말 늘어나는 피자! 토핑도 풍성하고 도우도 쫄깃해요. 사이드로 시킨 감자튀김도 맛있었습니다. 배달도 되니까 편하게 시켜먹기 좋아요.',
-        tags: ['tasty', 'kind'],
-        created_at: new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000).toISOString() // 5일 전
-      },
-      {
-        id: 'demo-3',
-        restaurant_id: 'demo-rest-3',
-        restaurant: { id: 'demo-rest-3', name: '맛있는 국수집', emoji: '🍜', category: '한식' },
-        rating: 5,
-        content: '여름에 딱 좋은 시원한 냉면! 육수가 깔끔하고 면도 쫄깃해요. 양도 많아서 배부르게 먹었습니다. 물냉면, 비빔냉면 둘 다 추천해요.',
-        tags: ['tasty', 'portion', 'fast'],
-        created_at: new Date(now.getTime() - 10 * 24 * 60 * 60 * 1000).toISOString() // 10일 전
-      },
-      {
-        id: 'demo-4',
-        restaurant_id: 'demo-rest-4',
-        restaurant: { id: 'demo-rest-4', name: '스시도쿄', emoji: '🍣', category: '일식' },
-        rating: 4.5,
-        content: '신선한 회와 초밥이 일품입니다. 특히 연어 초밥이 정말 맛있었어요. 가격대는 조금 있지만 특별한 날에 가기 좋은 곳이에요.',
-        tags: ['tasty', 'ambiance'],
-        created_at: new Date(now.getTime() - 15 * 24 * 60 * 60 * 1000).toISOString() // 15일 전
-      },
-      {
-        id: 'demo-5',
-        restaurant_id: 'demo-rest-5',
-        restaurant: { id: 'demo-rest-5', name: '버거하우스', emoji: '🍔', category: '양식' },
-        rating: 4,
-        content: '수제 버거가 정말 맛있어요! 패티가 두툼하고 육즙이 풍부합니다. 감자튀김도 바삭바삭하고 양이 많아서 좋아요.',
-        tags: ['tasty', 'portion', 'value'],
-        created_at: new Date(now.getTime() - 35 * 24 * 60 * 60 * 1000).toISOString() // 35일 전 (이번 달 이전)
-      }
-    ];
-  }
-
-  /**
    * 리뷰 목록 로드
    */
   async loadReviews() {
@@ -1869,19 +2027,10 @@ class ReviewHistoryUI {
       }
 
       this.reviews = result.data || [];
-
-      // API에 데이터가 없으면 데모 데이터 사용 (시연용)
-      if (this.reviews.length === 0) {
-        console.log('No reviews from API, using demo data for demonstration');
-        this.reviews = this.getDemoReviews();
-      }
-
       this.sortAndRenderReviews();
     } catch (error) {
       console.error('리뷰 로드 오류:', error);
-      // 오류 발생 시에도 데모 데이터 표시 (시연용)
-      console.log('API error, using demo data for demonstration');
-      this.reviews = this.getDemoReviews();
+      this.reviews = [];
       this.sortAndRenderReviews();
     } finally {
       this.isLoading = false;
@@ -2201,6 +2350,9 @@ class ReviewWriteUI {
     this.sessionId = this.getSessionId();
     this.formContainer = document.querySelector('[data-form="review"]');
     this.setupEventListeners();
+    // 별점 초기화
+    this.currentRating = 0;
+    this.updateRatingDisplay(0);
   }
 
   /**
@@ -2266,13 +2418,15 @@ class ReviewWriteUI {
    * 별점 미리보기 (호버 시)
    */
   previewRating(rating) {
-    document.querySelectorAll('[data-rating]').forEach(star => {
+    const reviewScreen = document.getElementById('screen-review-write');
+    if (!reviewScreen) return;
+    
+    reviewScreen.querySelectorAll('[data-rating]').forEach(star => {
       const starRating = parseInt(star.getAttribute('data-rating'));
+      star.classList.remove('text-amber-400', 'text-gray-300');
       if (starRating <= rating) {
         star.classList.add('text-amber-400');
-        star.classList.remove('text-gray-300');
       } else {
-        star.classList.remove('text-amber-400');
         star.classList.add('text-gray-300');
       }
     });
@@ -2283,16 +2437,23 @@ class ReviewWriteUI {
    */
   updateRatingDisplay(rating) {
     console.log('⭐ 별점 표시 업데이트:', rating);
-    const stars = document.querySelectorAll('[data-rating]');
+    // 리뷰 작성 화면 내의 별만 선택
+    const reviewScreen = document.getElementById('screen-review-write');
+    if (!reviewScreen) {
+      console.log('⭐ 리뷰 작성 화면을 찾을 수 없음');
+      return;
+    }
+    
+    const stars = reviewScreen.querySelectorAll('[data-rating]');
     console.log('⭐ 별 개수:', stars.length);
     
     stars.forEach(star => {
       const starRating = parseInt(star.getAttribute('data-rating'));
-      if (starRating <= rating) {
+      // 강제로 클래스 초기화 후 적용
+      star.classList.remove('text-amber-400', 'text-gray-300');
+      if (starRating <= rating && rating > 0) {
         star.classList.add('text-amber-400');
-        star.classList.remove('text-gray-300');
       } else {
-        star.classList.remove('text-amber-400');
         star.classList.add('text-gray-300');
       }
     });
@@ -2377,22 +2538,33 @@ class ReviewWriteUI {
    * 폼 초기화
    */
   resetForm() {
+    const reviewScreen = document.getElementById('screen-review-write');
+    
     // 별점 초기화
     this.currentRating = 0;
-    this.updateRatingDisplay(0);
+    if (reviewScreen) {
+      reviewScreen.querySelectorAll('[data-rating]').forEach(star => {
+        star.classList.remove('text-amber-400');
+        star.classList.add('text-gray-300');
+      });
+    }
 
     // 태그 초기화
     this.selectedTags.clear();
-    document.querySelectorAll('[data-tag]').forEach(tag => {
-      tag.classList.remove('bg-primary', 'text-white');
-      tag.classList.add('bg-gray-100', 'text-gray-600');
-    });
+    if (reviewScreen) {
+      reviewScreen.querySelectorAll('[data-tag]').forEach(tag => {
+        tag.classList.remove('bg-primary', 'text-white');
+        tag.classList.add('bg-gray-100', 'text-gray-600');
+      });
+    }
 
     // 텍스트 영역 초기화
     const textarea = document.getElementById('review-content');
     if (textarea) {
       textarea.value = '';
     }
+    
+    console.log('⭐ 폼 초기화 완료 - 별점:', this.currentRating);
   }
 
   /**
