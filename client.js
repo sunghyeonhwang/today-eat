@@ -248,12 +248,32 @@ class NearbyRestaurantsUI {
 
     try {
       const position = await this.locationManager.getCurrentPosition();
-      // 위치를 가져왔지만 아직 역지오코딩이 안되므로 안내 메시지 표시
-      this.showStatus(
-        `위치 확인됨 (${position.latitude.toFixed(4)}, ${position.longitude.toFixed(4)}). 현재 좌표 기반 검색은 준비 중입니다. 주소를 직접 입력해 주세요.`,
-        'warning'
-      );
+      
+      // 역지오코딩으로 좌표를 주소로 변환
+      this.showStatus('주소를 찾는 중...', 'info');
+      
+      const response = await fetch(`/api/reverse-geocode?latitude=${position.latitude}&longitude=${position.longitude}`);
+      const result = await response.json();
+
+      if (!result.success) {
+        throw new Error(result.error || '주소 변환에 실패했습니다.');
+      }
+
+      // 짧은 주소(구/동 정보)를 입력창에 설정
+      const shortAddress = result.data.shortAddress || result.data.address;
+      if (locationInput) {
+        locationInput.value = shortAddress;
+      }
+
+      this.showStatus(`✅ 현재 위치: ${shortAddress}`, 'success');
+
+      // 자동으로 검색 실행
+      setTimeout(() => {
+        this.searchNearbyRestaurants(shortAddress);
+      }, 500);
+
     } catch (error) {
+      console.error('현재 위치 사용 오류:', error);
       this.showStatus(error.message, 'error');
     }
   }

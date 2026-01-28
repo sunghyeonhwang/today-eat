@@ -7,7 +7,7 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const { createClient } = require('@supabase/supabase-js');
-const { searchNearbyRestaurants } = require('./services/naverSearch');
+const { searchNearbyRestaurants, reverseGeocode } = require('./services/naverSearch');
 require('dotenv').config();
 
 // ===================
@@ -330,6 +330,70 @@ app.get('/api/nearby-restaurants', async (req, res) => {
         success: false,
         error: '외부 검색 서비스 응답 오류',
         code: 'NAVER_API_ERROR'
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// ===================
+// Reverse Geocoding (역지오코딩)
+// ===================
+
+// GET /api/reverse-geocode - GPS 좌표를 주소로 변환
+app.get('/api/reverse-geocode', async (req, res) => {
+  try {
+    const { latitude, longitude } = req.query;
+
+    if (!latitude || !longitude) {
+      return res.status(400).json({
+        success: false,
+        error: '위도(latitude)와 경도(longitude)가 필요합니다.',
+        example: '/api/reverse-geocode?latitude=37.5665&longitude=126.9780'
+      });
+    }
+
+    // 좌표 유효성 검사
+    const lat = parseFloat(latitude);
+    const lng = parseFloat(longitude);
+
+    if (isNaN(lat) || isNaN(lng)) {
+      return res.status(400).json({
+        success: false,
+        error: '위도와 경도는 숫자여야 합니다.'
+      });
+    }
+
+    if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+      return res.status(400).json({
+        success: false,
+        error: '유효하지 않은 좌표입니다.'
+      });
+    }
+
+    // 네이버 역지오코딩 API 호출
+    const result = await reverseGeocode({
+      latitude: lat,
+      longitude: lng
+    });
+
+    res.json({
+      success: true,
+      data: result
+    });
+  } catch (error) {
+    console.error('역지오코딩 오류:', error.message);
+
+    // 에러 유형에 따른 응답
+    if (error.message.includes('네이버 API')) {
+      return res.status(502).json({
+        success: false,
+        error: '주소 변환 서비스 응답 오류',
+        code: 'NAVER_GEOCODING_ERROR'
       });
     }
 
