@@ -1626,29 +1626,63 @@ function setupFilterOptions() {
   const modal = document.getElementById('filter-modal');
   if (!modal) return;
 
+  // 필터 상태 저장
+  let selectedFilters = {
+    category: '전체',
+    distance: '500m 이내',
+    priceRange: '전체'
+  };
+
   // 모든 필터 버튼 찾기
-  const filterButtons = modal.querySelectorAll('button[type="button"]:not([data-action])');
+  const filterSections = modal.querySelectorAll('.mb-6');
   
-  filterButtons.forEach(button => {
-    // 기존 이벤트 리스너 제거 방지
-    if (button.dataset.filterSetup) return;
-    button.dataset.filterSetup = 'true';
+  filterSections.forEach((section, sectionIndex) => {
+    const buttons = section.querySelectorAll('button[type="button"]:not([data-action])');
+    
+    buttons.forEach(button => {
+      // 기존 이벤트 리스너 제거 방지
+      if (button.dataset.filterSetup) return;
+      button.dataset.filterSetup = 'true';
 
-    button.addEventListener('click', () => {
-      // 같은 그룹 내의 다른 버튼 비활성화
-      const parentDiv = button.parentElement;
-      const siblingButtons = parentDiv.querySelectorAll('button[type="button"]');
-      
-      siblingButtons.forEach(btn => {
-        btn.classList.remove('bg-primary', 'text-white');
-        btn.classList.add('bg-gray-100', 'text-gray-600');
+      button.addEventListener('click', () => {
+        // 같은 그룹 내의 다른 버튼 비활성화
+        buttons.forEach(btn => {
+          btn.classList.remove('bg-primary', 'text-white');
+          btn.classList.add('bg-gray-100', 'text-gray-600');
+        });
+
+        // 현재 버튼 활성화
+        button.classList.remove('bg-gray-100', 'text-gray-600');
+        button.classList.add('bg-primary', 'text-white');
+
+        // 선택된 필터 저장
+        const filterValue = button.textContent.trim();
+        if (sectionIndex === 0) selectedFilters.category = filterValue;
+        else if (sectionIndex === 1) selectedFilters.distance = filterValue;
+        else if (sectionIndex === 2) selectedFilters.priceRange = filterValue;
       });
-
-      // 현재 버튼 활성화
-      button.classList.remove('bg-gray-100', 'text-gray-600');
-      button.classList.add('bg-primary', 'text-white');
     });
   });
+
+  // "필터 적용하기" 버튼 이벤트
+  const applyButton = modal.querySelector('[data-action="apply-filter"]');
+  if (applyButton && !applyButton.dataset.filterApplySetup) {
+    applyButton.dataset.filterApplySetup = 'true';
+    applyButton.addEventListener('click', () => {
+      console.log('🔍 필터 적용:', selectedFilters);
+      
+      // 필터 적용 (카테고리만 구현, 거리와 가격은 추후 구현)
+      if (nearbyRestaurantsUI && nearbyRestaurantsUI.currentLocation) {
+        const category = selectedFilters.category === '전체' ? '' : selectedFilters.category;
+        nearbyRestaurantsUI.searchNearbyRestaurants(
+          nearbyRestaurantsUI.currentLocation,
+          category
+        );
+      }
+      
+      toggleFilterModal(false);
+    });
+  }
 }
 
 function updateRatingStars(rating) {

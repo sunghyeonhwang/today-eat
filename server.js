@@ -16,6 +16,7 @@ require('dotenv').config();
 const PORT = process.env.PORT || 3001;
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 // Validate required environment variables
 if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
@@ -28,9 +29,15 @@ if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
 }
 
 // ===================
-// Initialize Supabase Client
+// Initialize Supabase Clients
 // ===================
+// 일반 클라이언트 (RLS 적용)
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// 관리자 클라이언트 (RLS 우회) - 식당 추가용
+const supabaseAdmin = SUPABASE_SERVICE_ROLE_KEY 
+  ? createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+  : supabase;
 
 // ===================
 // Initialize Express App
@@ -195,7 +202,7 @@ app.get('/api/restaurants/:id', async (req, res) => {
   }
 });
 
-// POST /api/restaurants - 식당 추가
+// POST /api/restaurants - 식당 추가 (관리자 권한 사용)
 app.post('/api/restaurants', async (req, res) => {
   try {
     const {
@@ -221,7 +228,8 @@ app.post('/api/restaurants', async (req, res) => {
       });
     }
 
-    const { data, error } = await supabase
+    // 관리자 클라이언트 사용 (RLS 우회)
+    const { data, error } = await supabaseAdmin
       .from('restaurants')
       .insert([{
         name,
@@ -248,6 +256,7 @@ app.post('/api/restaurants', async (req, res) => {
       data
     });
   } catch (error) {
+    console.error('식당 추가 오류:', error);
     res.status(500).json({
       success: false,
       error: error.message
