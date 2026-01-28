@@ -4,6 +4,181 @@
 
 ---
 
+## 2026-01-28 - DB Agent (PostgreSQL)
+
+**티켓:** 4. Supabase 데이터베이스 테이블 설계
+**상태:** ✅ 성공
+
+### 작업 요약
+Supabase PostgreSQL 데이터베이스의 테이블 스키마를 설계하고, 서버 연결 코드를 작성했습니다.
+
+### 변경 사항
+
+#### 1. database/schema.sql (신규 파일)
+PostgreSQL DDL 스크립트 - Supabase SQL Editor에서 실행
+
+**테이블 구조:**
+
+| 테이블 | 설명 | 주요 컬럼 |
+|--------|------|-----------|
+| `restaurants` | 식당 정보 | id, name, emoji, category, sub_category, average_price, opening_hours |
+| `visit_history` | 이용 기록 | id, restaurant_id(FK), user_id, session_id, visit_type, is_favorite |
+| `reviews` | 리뷰 | id, restaurant_id(FK), visit_id(FK), rating, content, tags[], image_urls[] |
+
+**뷰:**
+- `restaurant_stats`: 식당별 평균 평점, 리뷰 수, 방문 수 집계
+
+**인덱스:**
+- 카테고리, 위치, 생성일 등 자주 조회되는 컬럼
+- GIN 인덱스 (태그 배열 검색용)
+
+**RLS 정책:**
+- restaurants: 모든 사용자 조회 가능
+- visit_history: 자신의 기록만 조회
+- reviews: 공개 리뷰 조회, 자신의 리뷰만 수정/삭제
+
+#### 2. server.js (신규 파일)
+Express.js + Supabase 클라이언트 서버
+
+**API 엔드포인트:**
+- `GET /api/restaurants` - 식당 목록
+- `GET /api/restaurants/random` - 랜덤 식당 (가챠)
+- `GET /api/restaurants/:id` - 식당 상세
+- `POST /api/restaurants` - 식당 추가
+- `GET /api/visits` - 방문 기록
+- `POST /api/visits` - 방문 기록 추가
+- `GET /api/reviews` - 리뷰 목록
+- `POST /api/reviews` - 리뷰 작성
+- `PATCH /api/reviews/:id` - 리뷰 수정
+- `DELETE /api/reviews/:id` - 리뷰 삭제 (소프트)
+
+#### 3. package.json (신규 파일)
+의존성 관리
+
+**Dependencies:**
+- express: ^4.18.2
+- @supabase/supabase-js: ^2.39.0
+- cors: ^2.8.5
+- dotenv: ^16.3.1
+
+#### 4. .env.example (신규 파일)
+환경 변수 템플릿
+
+#### 5. .gitignore (신규 파일)
+Git 무시 파일 설정
+
+### ER 다이어그램
+
+```mermaid
+erDiagram
+    RESTAURANTS {
+        uuid id PK
+        varchar name
+        varchar emoji
+        varchar category
+        varchar sub_category
+        text description
+        varchar address
+        decimal latitude
+        decimal longitude
+        integer price_range
+        integer average_price
+        jsonb opening_hours
+        boolean is_active
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    VISIT_HISTORY {
+        uuid id PK
+        uuid restaurant_id FK
+        uuid user_id
+        varchar session_id
+        varchar visit_type
+        timestamptz visited_at
+        text memo
+        boolean is_favorite
+        timestamptz created_at
+    }
+
+    REVIEWS {
+        uuid id PK
+        uuid restaurant_id FK
+        uuid visit_id FK
+        uuid user_id
+        varchar session_id
+        decimal rating
+        varchar title
+        text content
+        text_array tags
+        text_array image_urls
+        boolean is_public
+        boolean is_deleted
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    RESTAURANTS ||--o{ VISIT_HISTORY : "has visits"
+    RESTAURANTS ||--o{ REVIEWS : "has reviews"
+    VISIT_HISTORY ||--o| REVIEWS : "may have review"
+```
+
+### 테이블 관계 설명
+
+1. **RESTAURANTS → VISIT_HISTORY** (1:N)
+   - 하나의 식당에 여러 방문 기록 가능
+   - `restaurant_id` FK로 연결
+   - CASCADE DELETE (식당 삭제 시 방문 기록도 삭제)
+
+2. **RESTAURANTS → REVIEWS** (1:N)
+   - 하나의 식당에 여러 리뷰 가능
+   - `restaurant_id` FK로 연결
+   - CASCADE DELETE
+
+3. **VISIT_HISTORY → REVIEWS** (1:0..1)
+   - 방문 기록에 리뷰가 연결될 수 있음 (선택적)
+   - `visit_id` FK로 연결
+   - SET NULL ON DELETE
+
+### 설치 및 실행 방법
+
+```bash
+# 1. 의존성 설치
+npm install
+
+# 2. 환경 변수 설정
+cp .env.example .env
+# .env 파일에 Supabase URL과 API Key 입력
+
+# 3. Supabase에서 스키마 실행
+# Supabase Dashboard > SQL Editor > database/schema.sql 내용 실행
+
+# 4. 서버 실행
+npm run dev
+```
+
+### 기술 스택
+- PostgreSQL 15+ (Supabase)
+- Node.js + Express.js
+- @supabase/supabase-js
+
+---
+## 2026-01-28 05:09:46 - 장수석 👤
+
+**티켓:** 2. 인터랙션 디자인 설계 - 가챠 애니메이션 및 화면 전환
+**상태:** ✅ 성공
+
+
+### 작업 요약
+- 가챠(랜덤 선정) 기능의 인터랙션 디자인을 설계하겠습니다. 먼저 현재 프로젝트 구조를 파악하겠습니다.이제 프로젝트 구조를 이해했습니다. 가챠(랜덤 선정) 기능의 인터랙션 디자인을 설계하겠습니다.먼저 가챠 애니메이션을 위한 CSS와 JavaScript를 추가하겠습니다. M3 Expressive Motion 원칙에 따라 설계합니다.이제 JavaScript 인터랙션 로직을 작성합니다.이제 index.html에 gacha.css 링크를 추가합니다.AGENT_WORK_LOG를 업데이트합니다.이제 Git 커밋을 생성합니다.## 작업 완료 요약
+- ---
+- | 화면 크기 | 레이아웃 |
+- |----------|---------|
+- | **Compact** (< 600px) | 단일 컬럼, 세로 중앙 정렬, 192x192px 슬롯 |
+
+---
+
+
 ## 2026-01-28 - 수석 인터랙션 디자이너 (장수석)
 
 **티켓:** 2. 인터랙션 디자인 설계 - 가챠 애니메이션 및 화면 전환
